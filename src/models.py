@@ -1348,10 +1348,7 @@ class LlamaModel(LanguageModel):
 
         self._device = next(self._model.parameters()).device
 
-        try:
-            self._processor = AutoProcessor.from_pretrained(self._model_name, cache_dir=PATH_HF_CACHE)
-        except Exception:
-            self._processor = None
+        self._processor = AutoProcessor.from_pretrained(self._model_name, cache_dir=PATH_HF_CACHE)
 
         # Setup Tokenizer
         self._tokenizer = AutoTokenizer.from_pretrained(
@@ -1384,18 +1381,23 @@ class LlamaModel(LanguageModel):
             "timestamp": get_timestamp(),
         }
 
+        text = f"{prompt_system}{prompt_base}"
         if image_path:
             image = Image.open(image_path).convert("RGB")
-            text = f"{prompt_system}{prompt_base}"
+            inputs = self._processor(
+                text=text,
+                images=image,
+                return_tensors="pt"
+            ).to(self._device)
+        else:
+            inputs = self._processor(
+                text=text,
+                return_tensors="pt"
+            ).to(self._device)
 
         # Greedy Search
-        input_ids = self._tokenizer(
-            f"{prompt_system}{prompt_base}", return_tensors="pt", return_attention_mask=True
-        )
         response = self._model.generate(
-            input_ids=input_ids["input_ids"].to(self._device),
-            attention_mask=input_ids["attention_mask"].to(self._device),
-            pad_token_id=self._tokenizer.eos_token_id,
+            **inputs,
             max_new_tokens=max_tokens,
             length_penalty=0,
             output_scores=True,
@@ -1403,7 +1405,7 @@ class LlamaModel(LanguageModel):
         )
 
         # Parse Output
-        completion = self._tokenizer.decode(
+        completion = self._processor.decode(
             response.sequences[0], skip_special_tokens=True
         ).strip()
         result["answer_raw"] = completion
@@ -1425,13 +1427,22 @@ class LlamaModel(LanguageModel):
         }
 
         # Greedy Search
-        input_ids = self._tokenizer(
-            f"{prompt_system}{prompt_base}", return_tensors="pt"#, return_attention_mask=True
-        ).input_ids.to(self._device)
+        text = f"{prompt_system}{prompt_base}"
+        if image_path:
+            image = Image.open(image_path).convert("RGB")
+            inputs = self._processor(
+                text=text,
+                images=image,
+                return_tensors="pt"
+            ).to(self._device)
+        else:
+            inputs = self._processor(
+                text=text,
+                return_tensors="pt"
+            ).to(self._device)
+
         response = self._model.generate(
-            input_ids=input_ids,
-            #attention_mask=input_ids["attention_mask"].to(self._device),
-            pad_token_id=self._tokenizer.eos_token_id,
+            **inputs,
             max_new_tokens=max_tokens,
             length_penalty=0,
             do_sample=True,
@@ -1443,7 +1454,7 @@ class LlamaModel(LanguageModel):
         )
 
         # Parse Output
-        completion = self._tokenizer.decode(
+        completion = self._processor.decode(
             response.sequences[0], skip_special_tokens=True
         ).strip()
         result["answer_raw"] = completion
@@ -1462,7 +1473,6 @@ class LlamaModel(LanguageModel):
 
         return result
     
-
 class GemmaModel(LanguageModel):
     """Gemma 2 Model Wrapper --> Supports text + image prompts"""
 
