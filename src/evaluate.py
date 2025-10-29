@@ -133,6 +133,7 @@ for k, (identifier, scenario) in tqdm(
                 "eval_technique": args.eval_technique,
                 "eval_top_p": args.eval_top_p,
                 "eval_temperature": args.eval_temp,
+                "image_path": scenario["image_path"],
             }
 
             for nb_query in range(args.eval_nb_samples):
@@ -145,6 +146,7 @@ for k, (identifier, scenario) in tqdm(
                     max_tokens=1,
                     temperature=args.eval_temp,
                     top_p=args.eval_top_p,
+                    image_path=scenario["image_path"],
                 )
 
                 # Match response (token sequence) to actions
