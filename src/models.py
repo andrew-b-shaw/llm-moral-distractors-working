@@ -9,6 +9,7 @@ import cohere
 import anthropic
 import openai
 import google.generativeai as palm
+import Path
 
 from google.api_core import retry
 from typing import List, Dict
@@ -21,13 +22,15 @@ from transformers import (
     StoppingCriteria,
     BitsAndBytesConfig,
     StoppingCriteriaList,
+    AutoProcessor
 )
 
 from src.config import PATH_API_KEYS, PATH_HF_CACHE, PATH_OFFLOAD
 
 from accelerate import Accelerator
-
 from huggingface_hub import login
+
+from PIL import Image
 
 API_TIMEOUTS = [1, 2, 4, 8, 16, 32]
 
@@ -687,6 +690,7 @@ class OpenAIModel(LanguageModel):
         logprobs: int = 1,
         stop: List = ["Human:", " AI:"],
         echo: bool = False,
+        image_path: str = None,
     ):
         success = False
         t = 0
@@ -694,9 +698,15 @@ class OpenAIModel(LanguageModel):
         while not success:
             try:
                 # Dialogue Format
+                user_content = [{"type": "text", "text": prompt_base}]
+                if image_path:
+                    # Append image to same user message
+                    image_url = f"data:image/{Path(image_path).suffix[1:]};base64,{self._encode_image(image_path)}"
+                    user_content.append({"type": "image_url", "image_url": {"url": image_url}})
+
                 messages = [
                     {"role": "system", "content": f"{prompt_system[:-2]}"},
-                    {"role": "user", "content": f"{prompt_base}"},
+                    {"role": "user", "content": user_content},
                 ]
 
                 # Query ChatCompletion endpoint
@@ -723,7 +733,7 @@ class OpenAIModel(LanguageModel):
         return response
 
     def get_greedy_answer(
-        self, prompt_base: str, prompt_system: str, max_tokens: int
+        self, prompt_base: str, prompt_system: str, max_tokens: int, image_path: str = None
     ) -> str:
         return self.get_top_p_answer(
             prompt_base=prompt_base,
@@ -731,6 +741,7 @@ class OpenAIModel(LanguageModel):
             max_tokens=max_tokens,
             temperature=0,
             top_p=1.0,
+            image_path=image_path
         )
 
     def get_top_p_answer(
@@ -740,6 +751,7 @@ class OpenAIModel(LanguageModel):
         max_tokens: int,
         temperature: float,
         top_p: float,
+        image_path: str = None,
     ) -> any:
         result = {
             "timestamp": get_timestamp(),
@@ -757,6 +769,7 @@ class OpenAIModel(LanguageModel):
             logprobs=1,
             stop=["Human:", " AI:"],
             echo=False,
+            image_path=image_path
         )
 
         completion = response.choices[0].message.content.strip()
@@ -1335,6 +1348,11 @@ class LlamaModel(LanguageModel):
 
         self._device = next(self._model.parameters()).device
 
+        try:
+            self._processor = AutoProcessor.from_pretrained(self._model_name, cache_dir=PATH_HF_CACHE)
+        except Exception:
+            self._processor = None
+
         # Setup Tokenizer
         self._tokenizer = AutoTokenizer.from_pretrained(
             pretrained_model_name_or_path=self._model_name, cache_dir=PATH_HF_CACHE
@@ -1360,11 +1378,15 @@ class LlamaModel(LanguageModel):
         }
 
     def get_greedy_answer(
-        self, prompt_base: str, prompt_system: str, max_tokens: int
+        self, prompt_base: str, prompt_system: str, max_tokens: int, image_path: str = None
     ) -> str:
         result = {
             "timestamp": get_timestamp(),
         }
+
+        if image_path:
+            image = Image.open(image_path).convert("RGB")
+            text = f"{prompt_system}{prompt_base}"
 
         # Greedy Search
         input_ids = self._tokenizer(
@@ -1396,6 +1418,7 @@ class LlamaModel(LanguageModel):
         max_tokens: int,
         temperature: float,
         top_p: float,
+        image_path: str = None,
     ) -> any:
         result = {
             "timestamp": get_timestamp(),
@@ -1438,85 +1461,116 @@ class LlamaModel(LanguageModel):
         + probs[self._token_ids["B"]].item() + probs[self._token_ids["b"]].item()
 
         return result
+    
 
 class GemmaModel(LanguageModel):
-    """Gemma 2 Model Wrapper --> Access through HuggingFace Model Hub"""
+    """Gemma 2 Model Wrapper --> Supports text + image prompts"""
 
     def __init__(self, model_name: str):
         super().__init__(model_name)
         assert MODELS[model_name]["model_class"] == "GemmaModel", (
-            f"Errorneous Model Instatiation for {model_name}"
+            f"Erroneous Model Instantiation for {model_name}"
         )
 
         # Setup access using HF login
         login(token=get_api_key("huggingface"))
 
-        # Setup Device, Model
-        #self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        # Load model (may include vision)
+        self._model = AutoModelForCausalLM.from_pretrained(
+            pretrained_model_name_or_path=self._model_name,
+            cache_dir=PATH_HF_CACHE,
+            device_map="auto",
+            offload_folder=PATH_OFFLOAD,
+            torch_dtype=torch.float16,
+        )
 
-        if MODELS[model_name]["8bit"]:
-            raise ValueError(f"Unknown Model '{model_name}'")
-        else:
-            self._model = AutoModelForCausalLM.from_pretrained(
-                pretrained_model_name_or_path=self._model_name,
-                cache_dir=PATH_HF_CACHE,
-                device_map="auto",
-                offload_folder=PATH_OFFLOAD,
-            )#.to(self._device)
+        # Tokenizer + (optional) Processor
+        self._tokenizer = AutoTokenizer.from_pretrained(self._model_name, cache_dir=PATH_HF_CACHE)
+
+        try:
+            # Vision-capable Gemma models have a processor
+            self._processor = AutoProcessor.from_pretrained(self._model_name, cache_dir=PATH_HF_CACHE)
+        except Exception:
+            self._processor = None
 
         self._device = next(self._model.parameters()).device
 
-        # Setup Tokenizer
-        self._tokenizer = AutoTokenizer.from_pretrained(
-            pretrained_model_name_or_path=self._model_name, cache_dir=PATH_HF_CACHE
+        # Token mappings
+        self._token_ids = {
+            k: self._tokenizer(k).input_ids[1]
+            for k in [
+                "Yes","No","yes","no","A","B","a","b",
+                " Yes"," No"," yes"," no"," A"," B"," a"," b"
+            ]
+        }
+
+    def generate_with_image_and_text(
+        self,
+        image_path: str,
+        text_prompt: str,
+        max_new_tokens: int = 256,
+        temperature: float = 0.7,
+        top_p: float = 0.9,
+    ) -> str:
+        """
+        Generate a response from Gemma with both an image and text prompt.
+        """
+        if not self._processor:
+            raise ValueError(
+                f"Model '{self._model_name}' does not support images. "
+                "Try a vision-capable Gemma variant."
+            )
+
+        # Load image
+        image = Image.open(image_path).convert("RGB")
+
+        # Processor encodes both text + image
+        inputs = self._processor(
+            text=text_prompt,
+            images=image,
+            return_tensors="pt"
+        ).to(self._device)
+
+        # Generate response
+        outputs = self._model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            pad_token_id=self._tokenizer.eos_token_id,
         )
 
-        self._token_ids = {
-            "Yes": self._tokenizer("Yes").input_ids[1],
-            "No": self._tokenizer("No").input_ids[1],
-            "yes": self._tokenizer("yes").input_ids[1],
-            "no": self._tokenizer("no").input_ids[1],
-            "A": self._tokenizer("A").input_ids[1],
-            "B": self._tokenizer("B").input_ids[1],
-            "a": self._tokenizer("a").input_ids[1],
-            "b": self._tokenizer("b").input_ids[1],
-            " Yes": self._tokenizer(" Yes").input_ids[1],
-            " No": self._tokenizer(" No").input_ids[1],
-            " yes": self._tokenizer(" yes").input_ids[1],
-            " no": self._tokenizer(" no").input_ids[1],
-            " A": self._tokenizer(" A").input_ids[1],
-            " B": self._tokenizer(" B").input_ids[1],
-            " a": self._tokenizer(" a").input_ids[1],
-            " b": self._tokenizer(" b").input_ids[1]
-        }
+        # Decode and clean
+        completion = self._processor.decode(outputs[0], skip_special_tokens=True)
+        return completion.strip()
 
     def get_greedy_answer(
-        self, prompt_base: str, prompt_system: str, max_tokens: int
+        self, prompt_base: str, prompt_system: str, max_tokens: int, image_path: str = None
     ) -> str:
-        result = {
-            "timestamp": get_timestamp(),
-        }
-
-        # Greedy Search
+        """Greedy decoding (optional image)"""
+        if image_path:
+            # Use multimodal method
+            return self.generate_with_image_and_text(
+                image_path=image_path,
+                text_prompt=f"{prompt_system}{prompt_base}",
+                max_new_tokens=max_tokens,
+                temperature=0,
+                top_p=1.0,
+            )
+        
+        # Text-only fallback
         input_ids = self._tokenizer(
             f"{prompt_system}{prompt_base}", return_tensors="pt"
         ).input_ids.to(self._device)
+
         response = self._model.generate(
             input_ids,
             max_new_tokens=max_tokens,
-            length_penalty=0,
-            output_scores=True,
-            return_dict_in_generate=True,
+            pad_token_id=self._tokenizer.eos_token_id,
         )
 
-        # Parse Output
-        completion = self._tokenizer.decode(
-            response.sequences[0], skip_special_tokens=True
-        ).strip()
-        result["answer_raw"] = completion
-        result["answer"] = completion
-
-        return result
+        completion = self._tokenizer.decode(response[0], skip_special_tokens=True).strip()
+        return completion
 
     def get_top_p_answer(
         self,
@@ -1525,52 +1579,178 @@ class GemmaModel(LanguageModel):
         max_tokens: int,
         temperature: float,
         top_p: float,
+        image_path: str = None,
     ) -> any:
-        result = {
-            "timestamp": get_timestamp(),
-        }
+        """Top-p decoding (optional image)"""
+        result = {"timestamp": get_timestamp()}
 
-        # Greedy Search
+        if image_path:
+            result["answer"] = self.generate_with_image_and_text(
+                image_path=image_path,
+                text_prompt=f"{prompt_system}{prompt_base}",
+                max_new_tokens=max_tokens,
+                temperature=temperature,
+                top_p=top_p,
+            )
+            result["answer_raw"] = result["answer"]
+            return result
+
+        # Text-only fallback
         input_ids = self._tokenizer(
             f"{prompt_system}{prompt_base}", return_tensors="pt"
         ).input_ids.to(self._device)
+
         response = self._model.generate(
             input_ids,
-            max_new_tokens=1,
-            length_penalty=0,
+            max_new_tokens=max_tokens,
             do_sample=True,
-            top_p=top_p,
             temperature=temperature,
-            output_scores=True,
-            output_logits=True,
+            top_p=top_p,
+            pad_token_id=self._tokenizer.eos_token_id,
             return_dict_in_generate=True,
+            output_scores=True,
         )
 
-        # Parse Output
-        completion = self._tokenizer.decode(
-            response.sequences[0], skip_special_tokens=True
-        ).strip()
+        completion = self._tokenizer.decode(response.sequences[0], skip_special_tokens=True)
         result["answer_raw"] = completion
-        result["answer"] = completion[len(prompt_system) + len(prompt_base):]
-
-        probs = torch.softmax(response.logits[0], dim=1).squeeze()
-        
-        result["token_prob_yes"] = probs[self._token_ids[" Yes"]].item() + probs[self._token_ids[" yes"]].item() 
-        + probs[self._token_ids["Yes"]].item() + probs[self._token_ids["yes"]].item()
-        result["token_prob_no"] = probs[self._token_ids[" No"]].item() + probs[self._token_ids[" no"]].item() 
-        + probs[self._token_ids["No"]].item() + probs[self._token_ids["no"]].item()
-        result["token_prob_a"] = probs[self._token_ids[" A"]].item() + probs[self._token_ids[" a"]].item() 
-        + probs[self._token_ids["A"]].item() + probs[self._token_ids["a"]].item()
-        result["token_prob_b"] = probs[self._token_ids[" B"]].item() + probs[self._token_ids[" b"]].item() 
-        + probs[self._token_ids["B"]].item() + probs[self._token_ids["b"]].item()
-
+        result["answer"] = completion[len(prompt_system) + len(prompt_base):].strip()
         return result
+    
 
-def create_model(model_name):
-    """Init Models from model_name only"""
-    if model_name in MODELS:
-        class_name = MODELS[model_name]["model_class"]
-        cls = getattr(sys.modules[__name__], class_name)
-        return cls(model_name)
+# ----------------------------------------------------------------------------------------------------------------------
+# Previous (text only Gemma model)
+# class GemmaModel(LanguageModel):
+#     """Gemma 2 Model Wrapper --> Access through HuggingFace Model Hub"""
 
-    raise ValueError(f"Unknown Model '{model_name}'")
+#     def __init__(self, model_name: str):
+#         super().__init__(model_name)
+#         assert MODELS[model_name]["model_class"] == "GemmaModel", (
+#             f"Errorneous Model Instatiation for {model_name}"
+#         )
+
+#         # Setup access using HF login
+#         login(token=get_api_key("huggingface"))
+
+#         # Setup Device, Model
+#         #self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+#         if MODELS[model_name]["8bit"]:
+#             raise ValueError(f"Unknown Model '{model_name}'")
+#         else:
+#             self._model = AutoModelForCausalLM.from_pretrained(
+#                 pretrained_model_name_or_path=self._model_name,
+#                 cache_dir=PATH_HF_CACHE,
+#                 device_map="auto",
+#                 offload_folder=PATH_OFFLOAD,
+#             )#.to(self._device)
+
+#         self._device = next(self._model.parameters()).device
+
+#         # Setup Tokenizer
+#         self._tokenizer = AutoTokenizer.from_pretrained(
+#             pretrained_model_name_or_path=self._model_name, cache_dir=PATH_HF_CACHE
+#         )
+
+#         self._token_ids = {
+#             "Yes": self._tokenizer("Yes").input_ids[1],
+#             "No": self._tokenizer("No").input_ids[1],
+#             "yes": self._tokenizer("yes").input_ids[1],
+#             "no": self._tokenizer("no").input_ids[1],
+#             "A": self._tokenizer("A").input_ids[1],
+#             "B": self._tokenizer("B").input_ids[1],
+#             "a": self._tokenizer("a").input_ids[1],
+#             "b": self._tokenizer("b").input_ids[1],
+#             " Yes": self._tokenizer(" Yes").input_ids[1],
+#             " No": self._tokenizer(" No").input_ids[1],
+#             " yes": self._tokenizer(" yes").input_ids[1],
+#             " no": self._tokenizer(" no").input_ids[1],
+#             " A": self._tokenizer(" A").input_ids[1],
+#             " B": self._tokenizer(" B").input_ids[1],
+#             " a": self._tokenizer(" a").input_ids[1],
+#             " b": self._tokenizer(" b").input_ids[1]
+#         }
+
+#     def get_greedy_answer(
+#         self, prompt_base: str, prompt_system: str, max_tokens: int, image_path: str = None
+#     ) -> str:
+#         result = {
+#             "timestamp": get_timestamp(),
+#         }
+
+#         # Greedy Search
+#         input_ids = self._tokenizer(
+#             f"{prompt_system}{prompt_base}", return_tensors="pt"
+#         ).input_ids.to(self._device)
+#         response = self._model.generate(
+#             input_ids,
+#             max_new_tokens=max_tokens,
+#             length_penalty=0,
+#             output_scores=True,
+#             return_dict_in_generate=True,
+#         )
+
+#         # Parse Output
+#         completion = self._tokenizer.decode(
+#             response.sequences[0], skip_special_tokens=True
+#         ).strip()
+#         result["answer_raw"] = completion
+#         result["answer"] = completion
+
+#         return result
+
+#     def get_top_p_answer(
+#         self,
+#         prompt_base: str,
+#         prompt_system: str,
+#         max_tokens: int,
+#         temperature: float,
+#         top_p: float,
+#     ) -> any:
+#         result = {
+#             "timestamp": get_timestamp(),
+#         }
+
+#         # Greedy Search
+#         input_ids = self._tokenizer(
+#             f"{prompt_system}{prompt_base}", return_tensors="pt"
+#         ).input_ids.to(self._device)
+#         response = self._model.generate(
+#             input_ids,
+#             max_new_tokens=1,
+#             length_penalty=0,
+#             do_sample=True,
+#             top_p=top_p,
+#             temperature=temperature,
+#             output_scores=True,
+#             output_logits=True,
+#             return_dict_in_generate=True,
+#         )
+
+#         # Parse Output
+#         completion = self._tokenizer.decode(
+#             response.sequences[0], skip_special_tokens=True
+#         ).strip()
+#         result["answer_raw"] = completion
+#         result["answer"] = completion[len(prompt_system) + len(prompt_base):]
+
+#         probs = torch.softmax(response.logits[0], dim=1).squeeze()
+        
+#         result["token_prob_yes"] = probs[self._token_ids[" Yes"]].item() + probs[self._token_ids[" yes"]].item() 
+#         + probs[self._token_ids["Yes"]].item() + probs[self._token_ids["yes"]].item()
+#         result["token_prob_no"] = probs[self._token_ids[" No"]].item() + probs[self._token_ids[" no"]].item() 
+#         + probs[self._token_ids["No"]].item() + probs[self._token_ids["no"]].item()
+#         result["token_prob_a"] = probs[self._token_ids[" A"]].item() + probs[self._token_ids[" a"]].item() 
+#         + probs[self._token_ids["A"]].item() + probs[self._token_ids["a"]].item()
+#         result["token_prob_b"] = probs[self._token_ids[" B"]].item() + probs[self._token_ids[" b"]].item() 
+#         + probs[self._token_ids["B"]].item() + probs[self._token_ids["b"]].item()
+
+#         return result
+
+# def create_model(model_name):
+#     """Init Models from model_name only"""
+#     if model_name in MODELS:
+#         class_name = MODELS[model_name]["model_class"]
+#         cls = getattr(sys.modules[__name__], class_name)
+#         return cls(model_name)
+
+#     raise ValueError(f"Unknown Model '{model_name}'")
