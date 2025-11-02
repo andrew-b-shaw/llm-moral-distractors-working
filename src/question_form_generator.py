@@ -2,7 +2,8 @@
 import json
 from typing import Dict, Tuple
 
-from src.config import PATH_QUESTION_TEMPLATES 
+from data.question_templates.question_templates import QUESTION_TEMPLATES
+from src.config import PATH_QUESTION_TEMPLATES
 
 
 def get_question_form(
@@ -18,11 +19,14 @@ def get_question_form(
     )
 
     # (2) Generate question form
-    with open(f"{PATH_QUESTION_TEMPLATES}/{question_type}.json", encoding="utf-8") as f:
-        question_config = json.load(f)
+    question_config = QUESTION_TEMPLATES[question_type]
 
     question_form = {
         "question": question_config["question"].format(
+            scenario["selftext"]
+        )
+        if question_type == "aita" else
+        question_config["question"].format(
             scenario["context"],
             scenario[action_mapping["A"]],
             scenario[action_mapping["B"]],

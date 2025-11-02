@@ -3,6 +3,8 @@ import re
 import sys
 import time
 import math
+from abc import abstractmethod
+
 import torch
 import ai21
 import cohere
@@ -31,6 +33,8 @@ from accelerate import Accelerator
 from huggingface_hub import login
 
 from PIL import Image
+
+from src.prompters import Distractor
 
 API_TIMEOUTS = [1, 2, 4, 8, 16, 32]
 
@@ -493,6 +497,7 @@ class LanguageModel:
         """Return model_id"""
         return self._model_id
 
+    @abstractmethod
     def get_greedy_answer(
         self, prompt_base: str, prompt_system: str, max_tokens: int
     ) -> str:
@@ -503,18 +508,22 @@ class LanguageModel:
         :param prompt_sytem:    system instruction for chat endpoint of OpenAI
         :return:                answer string
         """
+        pass
 
+    @abstractmethod
     def get_top_p_answer(
         self,
+        distractor: Distractor | None,
         prompt_base: str,
         prompt_system: str,
         max_tokens: int,
         temperature: float,
         top_p: float,
-    ) -> str:
+    ) -> dict[str, any]:
         """
         Gets answer using sampling (based on top_p and temperature)
 
+        :param distractor:      the distractor to inject
         :param prompt_base:     base prompt
         :param prompt_sytem:    system instruction for chat endpoint of OpenAI
         :param max_tokens       max tokens in answer
@@ -522,145 +531,7 @@ class LanguageModel:
         :param top_p            top_p parameter
         :return:                answer string
         """
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-# COHERE PALM2 Wrapper
-# ----------------------------------------------------------------------------------------------------------------------
-class PalmModel(LanguageModel):
-    """PaLM2 API Wrapper"""
-    
-    def __init__(self, model_name: str):
-        super().__init__(model_name)
-        assert MODELS[model_name]["model_class"] == "PalmModel", (
-            f"Errorneous Model Instatiation for {model_name}"
-        )
-
-        api_key = get_api_key("google")
-        palm.configure(api_key=api_key)
-
-
-    def get_greedy_answer(
-        self, prompt_base: str, prompt_system: str, max_tokens: int
-    ) -> str:
-        return self.get_top_p_answer(
-            prompt_base=prompt_base,
-            prompt_system=prompt_system,
-            max_tokens=max_tokens,
-            temperature=0,
-            top_p=1.0,
-        )
-
-    @retry.Retry()
-    def generate_text(self, *args, **kwargs):
-        """Text Generation Handler for PalM2 API Models"""
-        return palm.generate_text(*args, **kwargs)
-
-    def get_top_p_answer(
-        self,
-        prompt_base: str,
-        prompt_system: str,
-        max_tokens: int,
-        temperature: float,
-        top_p: float,
-    ) -> str:
-        
-        result = {
-            "timestamp": get_timestamp(),
-        }
-
-        success = False
-        t = 0
-
-        while not success:
-            try:
-                response = self.generate_text(
-                    model=self._model_name,
-                    prompt=f"{prompt_system}{prompt_base}",
-                    temperature=temperature,
-                    top_p=top_p,
-                    max_output_tokens=max_tokens,
-                )
-
-                if response.result:
-                    response["answer_raw"] = response.result.strip()
-                else:
-                    response["answer_raw"] = "Empty Response"
-
-            except:
-                time.sleep(API_TIMEOUTS[t])
-                t = min(t + 1, len(API_TIMEOUTS))
-                
-        return result
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-# COHERE MODEL WRAPPER
-# ----------------------------------------------------------------------------------------------------------------------
-class CohereModel(LanguageModel):
-    """Cohere API Model Wrapper"""
-    def __init__(self, model_name: str):
-        super().__init__(model_name)
-        assert MODELS[model_name]["model_class"] == "CohereModel", (
-            f"Errorneous Model Instatiation for {model_name}" 
-        )
-
-        api_key = get_api_key("cohere")
-        self._cohere_client = cohere.Client(api_key)
-
-    def get_greedy_answer(
-        self, prompt_base: str, prompt_system: str, max_tokens: int
-    ) -> str:
-        return self.get_top_p_answer(
-            prompt_base=prompt_base,
-            prompt_system=prompt_system,
-            max_tokens=max_tokens,
-            temperature=0,
-            top_p=1.0,
-        )
-
-    def get_top_p_answer(
-        self,
-        prompt_base: str,
-        prompt_system: str,
-        max_tokens: int,
-        temperature: float,
-        top_p: float,
-    ) -> str:
-        result = {
-            "timestamp": get_timestamp(),
-        }
-
-        try:
-            # (1) Top-P Sampling
-            response = self._cohere_client.generate(
-                model=self._model_name,
-                prompt="{}{}".format(prompt_system, prompt_base),
-                max_tokens=max_tokens,
-                temperature=temperature,
-                num_generations=1,
-                k=0,
-                p=top_p,
-                frequency_penalty=0,
-                presence_penalty=0,
-                return_likelihoods="GENERATION",
-                stop_sequences=[],
-            )
-
-            completion = response.generations[0].text.strip()
-            result["answer_raw"] = completion
-
-            # Cohere Specific Post-Processing / Parsing
-            # --> Cohere models respond quite frequently in following structure: <answer> \n\n repating dilemma or random dilemma
-            if "\n" in completion:
-                completion = completion.split("\n\n")[0]
-
-            result["answer"] = completion
-
-        except:
-            result["answer"] = "FAILED - API Call interrupted"
-
-        return result
+        pass
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -1756,11 +1627,11 @@ class GemmaModel(LanguageModel):
 
 #         return result
 
-# def create_model(model_name):
-#     """Init Models from model_name only"""
-#     if model_name in MODELS:
-#         class_name = MODELS[model_name]["model_class"]
-#         cls = getattr(sys.modules[__name__], class_name)
-#         return cls(model_name)
+def create_model(model_name):
+    """Init Models from model_name only"""
+    if model_name in MODELS:
+        class_name = MODELS[model_name]["model_class"]
+        cls = getattr(sys.modules[__name__], class_name)
+        return cls(model_name)
 
-#     raise ValueError(f"Unknown Model '{model_name}'")
+    raise ValueError(f"Unknown Model '{model_name}'")

@@ -4,6 +4,7 @@ import json
 import argparse
 import pandas as pd
 from tqdm import tqdm
+from datasets import load_dataset
 
 from src.models import (
     CohereModel,
@@ -49,12 +50,6 @@ parser.add_argument(
     nargs="+",
 )
 parser.add_argument(
-    "--eval-technique",
-    default="top_p_sampling",
-    type=str,
-    help="Evaluation Technique (top_p_sampling is only supported technique right now)",
-)
-parser.add_argument(
     "--eval-top-p", default=1.0, type=float, help="Top-P parameter for top-p sampling"
 )
 parser.add_argument(
@@ -67,7 +62,10 @@ parser.add_argument(
     help="Max. number of tokens per completion",
 )
 parser.add_argument(
-    "--eval-nb-samples", default=1, type=int, help="Nb. of samples per question form"
+    "--eval-num-samples", default=1, type=int, help="Num. of samples per question form"
+)
+parser.add_argument(
+    "--eval-num-scenarios", default=-1, type=int, help="Num. of scenarios to evaluate"
 )
 
 args = parser.parse_args()
@@ -78,15 +76,17 @@ args = parser.parse_args()
 
 # Load scenarios
 scenarios = pd.read_csv(f"data/scenarios/{args.dataset}.csv")
+scenarios = scenarios[:args.num_scenarios] if args.num_scenarios > 0 else scenarios
 
 # Load refusals and common answer patterns
 with open(f"{PATH_RESPONSE_TEMPLATES}/refusals.txt", encoding="utf-8") as f:
     refusals = f.read().splitlines()
 
-response_patterns = {}
-for question_type in args.question_types:
-    with open(f"{PATH_RESPONSE_TEMPLATES}/{question_type}.json", encoding="utf-8") as f:
-        response_patterns[question_type] = json.load(f)
+# Commenting out because we want to directly use token probabilities
+# response_patterns = {}
+# for question_type in args.question_types:
+#     with open(f"{PATH_RESPONSE_TEMPLATES}/{question_type}.json", encoding="utf-8") as f:
+#         response_patterns[question_type] = json.load(f)
 
 # Creates result folders
 path_model = f"{PATH_RESULTS}/{args.experiment_name}/{args.dataset}_raw/{args.model_name.split('/')[-1]}"
@@ -115,7 +115,7 @@ for k, (identifier, scenario) in tqdm(
         for question_ordering in [0, 1]:
             # Get question form
             question_form, action_mapping = get_question_form(
-                scenario=scenario,
+                scenario=scenario.to_dict(),
                 question_type=question_type,
                 question_ordering=question_ordering,
                 system_instruction=True,
@@ -123,14 +123,14 @@ for k, (identifier, scenario) in tqdm(
 
             # Set result base dict
             result_base = {
-                "scenario_id": scenario["scenario_id"],
-                "distractor_id": scenario["distractor_id"],
+                # "scenario_id": scenario["scenario_id"],
+                # "distractor_id": scenario["distractor_id"],
                 "model_id": model.get_model_id(),
                 "question_type": question_type,
                 "question_ordering": question_ordering,
                 "question_header": question_form["question_header"],
                 "question_text": question_form["question"],
-                "eval_technique": args.eval_technique,
+                "eval_technique": "top_p_sampling",
                 "eval_top_p": args.eval_top_p,
                 "eval_temperature": args.eval_temp,
                 "image_path": scenario["image_path"],
@@ -150,21 +150,22 @@ for k, (identifier, scenario) in tqdm(
                 )
 
                 # Match response (token sequence) to actions
-                response["decision"] = token_to_action_matching(
-                    response["answer"],
-                    scenario,
-                    response_patterns,
-                    question_type,
-                    action_mapping,
-                    refusals,
-                )
+                response["decision"] = ""
+                # response["decision"] = token_to_action_matching(
+                #     response["answer"],
+                #     scenario,
+                #     response_patterns,
+                #     question_type,
+                #     action_mapping,
+                #     refusals,
+                # )
 
                 # Log Results
                 result = {**result_base, **response}
                 results.append(result)
 
         with open(
-            f'{path_model}/{question_type}/scenario_{scenario["scenario_id"]}_{scenario["distractor_id"]}.pickle',
+            f'{path_model}/{question_type}/scenario_{scenario["submission_id"]}_{i}.pickle',
             "wb",
         ) as f:
             pickle.dump(pd.DataFrame(results), f, protocol=0)
