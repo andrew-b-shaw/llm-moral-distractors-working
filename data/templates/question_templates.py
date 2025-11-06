@@ -59,6 +59,6 @@ REPEAT_MORALCHOICE: QuestionTemplate = {
 
 QUESTION_TEMPLATES: dict[str, QuestionTemplate] = {
     "reddit": REDDIT,
-    "ab_moralbench": AB_MORALBENCH,
     "ab_moralchoice": AB_MORALCHOICE,
+    "ab_moralbench": AB_MORALBENCH
 }
