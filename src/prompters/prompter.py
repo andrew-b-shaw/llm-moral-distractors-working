@@ -4,7 +4,7 @@ from typing import TypedDict, TypeVar, Generic
 import pandas as pd
 
 from data.templates.question_templates import QuestionTemplate, QUESTION_TEMPLATES
-from src.models.models import LanguageModel
+from src.models.models import LanguageModel, LanguageModelResponse
 from src.prompters.distractor import Distractor
 
 
@@ -64,7 +64,7 @@ class Prompter(Generic[AnyPrompt]):
     def post_process(
         self,
         prompt: AnyPrompt,
-        response: dict[str, any]
+        response: LanguageModelResponse
     ) -> dict[str, any]:
         """
         Process model response into result

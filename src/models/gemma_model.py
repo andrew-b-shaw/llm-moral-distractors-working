@@ -27,13 +27,13 @@ class GemmaModelResponse(LanguageModelResponse):
 
     def get_answer_prob(self, answer: str) -> float:
         token_ids = self._tokenizer(answer).input_ids
-        if len(token_ids) - 1 >= len(self._output.scores):
+        if len(token_ids) - 1 >= len(self._output.logits):
             return 0.0
 
         answer_prob = 1.0
         for i in range(len(token_ids) - 1):
             token_id = token_ids[i + 1]
-            logits = self._output.scores[i]
+            logits = self._output.logits[i]
             token_probs = torch.softmax(logits, dim=1).squeeze()
             answer_prob *= token_probs[token_id]
 
@@ -103,7 +103,7 @@ class GemmaModel(LanguageModel):
             }
         ]
 
-        prompt = self._processor.apply_chat_template(messages, add_generation_prompt=True)
+        prompt = self._processor.apply_chat_template(messages)
 
         # Processor encodes both text + image
         inputs = self._processor(
@@ -117,9 +117,12 @@ class GemmaModel(LanguageModel):
             output = self._model.generate(
                 **inputs,
                 max_new_tokens=max_new_tokens,
-                do_sample=False,
+                do_sample=True,
                 pad_token_id=self._tokenizer.eos_token_id,
                 output_scores=True,
+                output_logits=True,
+                temperature=temperature,
+                top_p=top_p,
                 return_dict_in_generate=True
             )
 
@@ -159,10 +162,13 @@ class GemmaModel(LanguageModel):
         output = self._model.generate(
             **inputs,
             max_new_tokens=max_tokens,
-            do_sample=False,
+            do_sample=True,
             pad_token_id=self._tokenizer.eos_token_id,
             return_dict_in_generate=True,
             output_scores=True,
+            output_logits=True,
+            temperature=temperature,
+            top_p=top_p,
         )
 
         completion = self._tokenizer.decode(output.sequences[0], skip_special_tokens=True)

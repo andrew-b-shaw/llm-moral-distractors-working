@@ -63,7 +63,7 @@ class LanguageModelResponse:
         self.answer_raw = answer_raw
 
     @abstractmethod
-    def get_answer_prob(self, token: str) -> float:
+    def get_answer_prob(self, answer: str) -> float:
         pass
 
 
