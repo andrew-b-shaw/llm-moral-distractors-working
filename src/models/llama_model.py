@@ -1,11 +1,44 @@
+import math
+
 import torch
 from huggingface_hub import login
-from transformers import AutoModelForCausalLM, AutoProcessor, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoProcessor, AutoTokenizer, LlamaTokenizer
 
 from src.config import PATH_OFFLOAD, PATH_HF_CACHE
 from src.models.model_utils import get_timestamp, get_api_key
-from src.models.models import MODELS, LanguageModel
+from src.models.models import MODELS, LanguageModel, LanguageModelResponse
 from PIL import Image
+
+
+class LlamaModelResponse(LanguageModelResponse):
+    _output: any
+    _tokenizer: LlamaTokenizer
+
+    def __init__(
+            self,
+            timestamp: str,
+            answer: str,
+            answer_raw: str,
+            output: any,
+            tokenizer: LlamaTokenizer
+    ):
+        super().__init__(timestamp, answer, answer_raw)
+        self._output = output
+        self._tokenizer = tokenizer
+
+    def get_answer_prob(self, answer: str) -> float:
+        token_ids = self._tokenizer(answer).input_ids
+        if len(token_ids) - 1 > len(self._output.logits):
+            return 0.0
+
+        answer_log_prob = 0.0
+        for i in range(len(token_ids) - 1):
+            token_id = token_ids[i + 1]
+            logits = self._output.logits[i]
+            token_probs = torch.softmax(logits, dim=1).squeeze()
+            answer_log_prob += math.log(token_probs[token_id].item())
+
+        return math.exp(answer_log_prob)
 
 
 class LlamaModel(LanguageModel):
@@ -42,64 +75,6 @@ class LlamaModel(LanguageModel):
             pretrained_model_name_or_path=self._model_name, cache_dir=PATH_HF_CACHE
         )
 
-        self._token_ids = {
-            "Yes": self._tokenizer("Yes").input_ids[1],
-            "No": self._tokenizer("No").input_ids[1],
-            "yes": self._tokenizer("yes").input_ids[1],
-            "no": self._tokenizer("no").input_ids[1],
-            "A": self._tokenizer("A").input_ids[1],
-            "B": self._tokenizer("B").input_ids[1],
-            "a": self._tokenizer("a").input_ids[1],
-            "b": self._tokenizer("b").input_ids[1],
-            " Yes": self._tokenizer(" Yes").input_ids[1],
-            " No": self._tokenizer(" No").input_ids[1],
-            " yes": self._tokenizer(" yes").input_ids[1],
-            " no": self._tokenizer(" no").input_ids[1],
-            " A": self._tokenizer(" A").input_ids[1],
-            " B": self._tokenizer(" B").input_ids[1],
-            " a": self._tokenizer(" a").input_ids[1],
-            " b": self._tokenizer(" b").input_ids[1]
-        }
-
-    def get_greedy_answer(
-            self, prompt_base: str, prompt_system: str, max_tokens: int, image_path: str = None
-    ) -> str:
-        result = {
-            "timestamp": get_timestamp(),
-        }
-
-        text = f"{prompt_system}{prompt_base}"
-        if image_path:
-            image = Image.open(image_path).convert("RGB")
-            inputs = self._processor(
-                text=text,
-                images=image,
-                return_tensors="pt"
-            ).to(self._device)
-        else:
-            inputs = self._processor(
-                text=text,
-                return_tensors="pt"
-            ).to(self._device)
-
-        # Greedy Search
-        response = self._model.generate(
-            **inputs,
-            max_new_tokens=max_tokens,
-            length_penalty=0,
-            output_scores=True,
-            return_dict_in_generate=True,
-        )
-
-        # Parse Output
-        completion = self._processor.decode(
-            response.sequences[0], skip_special_tokens=True
-        ).strip()
-        result["answer_raw"] = completion
-        result["answer"] = completion
-
-        return result
-
     def get_top_p_answer(
             self,
             prompt_base: str,
@@ -108,11 +83,7 @@ class LlamaModel(LanguageModel):
             temperature: float,
             top_p: float,
             image_path: str = None,
-    ) -> any:
-        result = {
-            "timestamp": get_timestamp(),
-        }
-
+    ) -> LlamaModelResponse:
         # Greedy Search
         text = f"{prompt_system}{prompt_base}"
         if image_path:
@@ -144,18 +115,13 @@ class LlamaModel(LanguageModel):
         completion = self._processor.decode(
             response.sequences[0], skip_special_tokens=True
         ).strip()
-        result["answer_raw"] = completion
-        result["answer"] = completion[len(prompt_system) + len(prompt_base) - 1:]
+        answer_raw = completion
+        answer = completion[len(prompt_system) + len(prompt_base) - 1:]
 
-        probs = torch.softmax(response.logits[0], dim=1).squeeze()
-
-        result["token_prob_yes"] = probs[self._token_ids[" Yes"]].item() + probs[self._token_ids[" yes"]].item()
-        + probs[self._token_ids["Yes"]].item() + probs[self._token_ids["yes"]].item()
-        result["token_prob_no"] = probs[self._token_ids[" No"]].item() + probs[self._token_ids[" no"]].item()
-        + probs[self._token_ids["No"]].item() + probs[self._token_ids["no"]].item()
-        result["token_prob_a"] = probs[self._token_ids[" A"]].item() + probs[self._token_ids[" a"]].item()
-        + probs[self._token_ids["A"]].item() + probs[self._token_ids["a"]].item()
-        result["token_prob_b"] = probs[self._token_ids[" B"]].item() + probs[self._token_ids[" b"]].item()
-        + probs[self._token_ids["B"]].item() + probs[self._token_ids["b"]].item()
-
-        return result
+        return LlamaModelResponse(
+            timestamp=get_timestamp(),
+            answer_raw=answer_raw,
+            answer=answer,
+            output=response,
+            tokenizer=self._tokenizer
+        )
