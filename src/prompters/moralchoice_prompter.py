@@ -52,7 +52,7 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
             "distractor_id": distractor_series["distractor_id"],
             "text": distractor_series["text"] if distractor_modality == "text" else None,
             "img": distractor_series["img_path"] if distractor_modality == "img" else None
-        } if distractor_series else None
+        } if distractor_series is not None else None
 
         # Create Scenario
         scenario: MoralChoiceScenario = {
@@ -60,6 +60,9 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
             "context": scenario_series["context"],
             "actions": [scenario_series["action1"], scenario_series["action2"]]
         }
+
+        print(distractor)
+        print(scenario)
 
         # Generate prompts with all orderings
         prompts = []
@@ -78,7 +81,7 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
         prompt: MoralChoicePrompt,
         response: LanguageModelResponse
     ) -> dict[str, any]:
-        if prompt["question_type"] == "ab":
+        if prompt["question_type"].startswith("ab"):
             # A/B question format
             action_tokens_dict = {
                 "A": A_TOKENS,
@@ -109,7 +112,7 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
             "eval_technique": "top_p_sampling",
             "eval_top_p": self.eval_top_p,
             "eval_temperature": self.eval_temp,
-            "image_path": prompt["distractor"]["image_path"],
+            "distractor_id": prompt["distractor"]["distractor_id"] if prompt["distractor"] is not None else None,
             "answer_raw": response.answer_raw,
             "answer": response.answer,
             "action_0_prob": 0.0,
@@ -117,7 +120,10 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
         }
 
         for action, tokens in action_tokens_dict.items():
+            print(action)
             for token in tokens:
+                print(token)
+                print(response.get_answer_prob(token))
                 result[f"action_{action_mapping_dict[action]}_prob"] += response.get_answer_prob(token)
 
         return result

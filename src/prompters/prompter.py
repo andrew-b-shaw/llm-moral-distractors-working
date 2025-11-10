@@ -80,7 +80,7 @@ class Prompter(Generic[AnyPrompt]):
         scenario_series: pd.Series,
         question_type: str,
         distractor_series: pd.Series | None = None
-    ):
+    ) -> list[dict[str, any]]:
         """
         Prompts the model with the given scenario and distractor data
 
@@ -94,7 +94,8 @@ class Prompter(Generic[AnyPrompt]):
         prompts = self.pre_process(
             scenario_series=scenario_series,
             distractor_series=distractor_series,
-            distractor_modality=distractor_series["modality"] if distractor_series else None
+            distractor_modality=distractor_series["modality"] if distractor_series is not None else None,
+            question_type=question_type
         )
 
         # TODO: join distractor with scenario

@@ -1,4 +1,5 @@
 import torch
+import math
 from PIL import Image
 from huggingface_hub import login
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoProcessor, GemmaTokenizer
@@ -27,17 +28,17 @@ class GemmaModelResponse(LanguageModelResponse):
 
     def get_answer_prob(self, answer: str) -> float:
         token_ids = self._tokenizer(answer).input_ids
-        if len(token_ids) - 1 >= len(self._output.logits):
+        if len(token_ids) - 1 > len(self._output.logits):
             return 0.0
 
-        answer_prob = 1.0
+        answer_log_prob = 0.0
         for i in range(len(token_ids) - 1):
             token_id = token_ids[i + 1]
             logits = self._output.logits[i]
             token_probs = torch.softmax(logits, dim=1).squeeze()
-            answer_prob *= token_probs[token_id]
+            answer_log_prob += math.log(token_probs[token_id].item())
 
-        return answer_prob
+        return math.exp(answer_log_prob)
 
 class GemmaModel(LanguageModel):
     """Gemma 2 Model Wrapper --> Supports text + image prompts"""
