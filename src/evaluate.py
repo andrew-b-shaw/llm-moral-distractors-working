@@ -6,13 +6,8 @@ import pandas as pd
 from tqdm import tqdm
 from datasets import load_dataset
 
-from src.models import (
-    CohereModel,
+from src.models.models import (
     OpenAIModel,
-    AnthropicModel,
-    FlanT5Model,
-    OptImlModel,
-    PalmModel,
     LlamaModel,
     GemmaModel,
     create_model,

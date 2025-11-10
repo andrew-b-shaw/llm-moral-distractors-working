@@ -1,7 +1,8 @@
 import pandas as pd
 
 from data.templates.question_templates import QUESTION_TEMPLATES
-from src.prompters.prompter import Scenario, Prompt, Prompter, Distractor
+from src.prompters.prompter import Scenario, Prompt, Prompter
+from src.prompters.distractor import Distractor
 
 
 class MoralChoiceScenario(Scenario):

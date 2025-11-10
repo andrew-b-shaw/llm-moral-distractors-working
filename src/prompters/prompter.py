@@ -5,13 +5,7 @@ import pandas as pd
 
 from data.templates.question_templates import QuestionTemplate, QUESTION_TEMPLATES
 from src.models.models import LanguageModel
-
-
-class Distractor(TypedDict):
-    modality: str
-    distractor_id: str
-    text: str | None
-    img: str | None
+from src.prompters.distractor import Distractor
 
 
 class Scenario(TypedDict):

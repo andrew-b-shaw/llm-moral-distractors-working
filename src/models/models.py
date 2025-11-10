@@ -4,11 +4,8 @@ import sys
 import time
 import math
 from abc import abstractmethod
-from src.models.openai_model import OpenAIModel
-from src.models.gemma_model import GemmaModel
-from src.models.llama_model import LlamaModel
 
-from src.prompters.prompter import Distractor
+from src.prompters.distractor import Distractor
 
 API_TIMEOUTS = [1, 2, 4, 8, 16, 32]
 
@@ -41,10 +38,10 @@ MODELS = dict(
             "likelihood_access": True,
             "endpoint": None,
         },
-        "google/gemma-2-2b-it": {
+        "google/gemma-3-4b-it": {
             "company": "google",
             "model_class": "GemmaModel",
-            "model_name": "google/gemma-2-2b-it",
+            "model_name": "google/gemma-3-4b-it",
             "8bit": False,
             "likelihood_access": True,
             "endpoint": None,
@@ -55,6 +52,21 @@ MODELS = dict(
 ####################################################################################
 # MODEL WRAPPERS
 ####################################################################################
+class LanguageModelResponse:
+    timestamp: str
+    answer: str
+    answer_raw: str
+
+    def __init__(self, timestamp: str, answer: str, answer_raw: str):
+        self.timestamp = timestamp
+        self.answer = answer
+        self.answer_raw = answer_raw
+
+    @abstractmethod
+    def get_answer_prob(self, token: str) -> float:
+        pass
+
+
 class LanguageModel:
     """ Generic LanguageModel Class"""
     
@@ -95,7 +107,7 @@ class LanguageModel:
         max_tokens: int,
         temperature: float,
         top_p: float,
-    ) -> dict[str, any]:
+    ) -> LanguageModelResponse:
         """
         Gets answer using sampling (based on top_p and temperature)
 
@@ -110,14 +122,4 @@ class LanguageModel:
         pass
 
 
-####################################################################################
-# MODEL CREATOR
-####################################################################################
-def create_model(model_name):
-    """Init Models from model_name only"""
-    if model_name in MODELS:
-        class_name = MODELS[model_name]["model_class"]
-        cls = getattr(sys.modules[__name__], class_name)
-        return cls(model_name)
 
-    raise ValueError(f"Unknown Model '{model_name}'")
