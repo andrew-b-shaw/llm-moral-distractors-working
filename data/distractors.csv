@@ -1,71 +1,61 @@
 id,sentiment,file_path,modality
-0,negative,img_distractor_data/negative/Garbage dump 2.jpg,image
-1,negative,img_distractor_data/negative/Garbage dump 3.jpg,image
-2,negative,img_distractor_data/negative/Dirt 1.jpg,image
-3,negative,img_distractor_data/negative/Garbage dump 4.jpg,image
-4,negative,img_distractor_data/negative/War 8.jpg,image
-5,negative,img_distractor_data/negative/Jail 2.jpg,image
-6,negative,img_distractor_data/negative/Garbage dump 6.jpg,image
-7,negative,img_distractor_data/negative/Destruction 4.jpg,image
-8,negative,img_distractor_data/negative/Destruction 6.jpg,image
-9,negative,img_distractor_data/negative/Destruction 7.jpg,image
-10,negative,img_distractor_data/negative/Destruction 3.jpg,image
-11,negative,img_distractor_data/negative/Explosion 5.jpg,image
-12,negative,img_distractor_data/negative/Car crash 1.jpg,image
-13,negative,img_distractor_data/negative/Car crash 3.jpg,image
-14,negative,img_distractor_data/negative/Car crash 2.jpg,image
-15,neutral,img_distractor_data/neutral/Road 1.jpg,image
-16,neutral,img_distractor_data/neutral/Thunderstorm 2.jpg,image
-17,neutral,img_distractor_data/neutral/Camping 10.jpg,image
-18,neutral,img_distractor_data/neutral/Grass 5.jpg,image
-19,neutral,img_distractor_data/neutral/Grass 1.jpg,image
-20,neutral,img_distractor_data/neutral/Grass 2.jpg,image
-21,neutral,img_distractor_data/neutral/Grass 3.jpg,image
-22,neutral,img_distractor_data/neutral/Street 3.jpg,image
-23,neutral,img_distractor_data/neutral/Solar panel 1.jpg,image
-24,neutral,img_distractor_data/neutral/Bar 1.jpg,image
-25,positive,img_distractor_data/positive/Lake 9.jpg,image
-26,positive,img_distractor_data/positive/Lake 8.jpg,image
-27,positive,img_distractor_data/positive/Beach 2.jpg,image
-28,positive,img_distractor_data/positive/Beach 1.jpg,image
-29,positive,img_distractor_data/positive/Fireworks 1.jpg,image
-30,positive,img_distractor_data/positive/Lake 10.jpg,image
-31,positive,img_distractor_data/positive/Lake 12.jpg,image
-32,positive,img_distractor_data/positive/Fireworks 2.jpg,image
-33,positive,img_distractor_data/positive/Lake 13.jpg,image
-34,positive,img_distractor_data/positive/Rainbow 2.jpg,image
-35,positive,img_distractor_data/positive/Lake 1.jpg,image
-36,positive,img_distractor_data/positive/Lake 14.jpg,image
-37,positive,img_distractor_data/positive/Rainbow 1.jpg,image
-38,positive,img_distractor_data/positive/Lake 15.jpg,image
-39,positive,img_distractor_data/positive/Lake 2.jpg,image
-40,negative,text_distractor_data/negative/FR71.txt,text
-41,negative,text_distractor_data/negative/G350.txt,text
-42,negative,text_distractor_data/negative/T006.txt,text
-43,negative,text_distractor_data/negative/T005.txt,text
-44,negative,text_distractor_data/negative/FI17.txt,text
-45,negative,text_distractor_data/negative/P19.txt,text
-46,negative,text_distractor_data/negative/T020.txt,text
-47,negative,text_distractor_data/negative/FI9.txt,text
-48,negative,text_distractor_data/negative/FI42.txt,text
-49,negative,text_distractor_data/negative/FR56.txt,text
-50,neutral,text_distractor_data/neutral/SW037.txt,text
-51,neutral,text_distractor_data/neutral/SW036.txt,text
-52,neutral,text_distractor_data/neutral/SW035.txt,text
-53,neutral,text_distractor_data/neutral/FI10.txt,text
-54,neutral,text_distractor_data/neutral/FR105.txt,text
-55,neutral,text_distractor_data/neutral/FI11.txt,text
-56,neutral,text_distractor_data/neutral/FI15.txt,text
-57,neutral,text_distractor_data/neutral/FR24.txt,text
-58,neutral,text_distractor_data/neutral/T044.txt,text
-59,neutral,text_distractor_data/neutral/FI36.txt,text
-60,positive,text_distractor_data/positive/SW008.txt,text
-61,positive,text_distractor_data/positive/G351.txt,text
-62,positive,text_distractor_data/positive/FI16.txt,text
-63,positive,text_distractor_data/positive/FI25.txt,text
-64,positive,text_distractor_data/positive/FI33.txt,text
-65,positive,text_distractor_data/positive/T041.txt,text
-66,positive,text_distractor_data/positive/FR108.txt,text
-67,positive,text_distractor_data/positive/SW015.txt,text
-68,positive,text_distractor_data/positive/FR40.txt,text
-69,positive,text_distractor_data/positive/SP027.txt,text
+img_neg_1,negative,img_distractor_data/negative/Garbage dump 2.jpg,image
+img_neg_2,negative,img_distractor_data/negative/Garbage dump 3.jpg,image
+img_neg_3,negative,img_distractor_data/negative/Dirt 1.jpg,image
+img_neg_4,negative,img_distractor_data/negative/Garbage dump 4.jpg,image
+img_neg_5,negative,img_distractor_data/negative/Jail 2.jpg,image
+img_neg_6,negative,img_distractor_data/negative/Garbage dump 6.jpg,image
+img_neg_7,negative,img_distractor_data/negative/Destruction 4.jpg,image
+img_neg_8,negative,img_distractor_data/negative/Destruction 7.jpg,image
+img_neg_9,negative,img_distractor_data/negative/Destruction 3.jpg,image
+img_neg_10,negative,img_distractor_data/negative/Car crash 1.jpg,image
+img_neu_1,neutral,img_distractor_data/neutral/Road 1.jpg,image
+img_neu_2,neutral,img_distractor_data/neutral/Thunderstorm 2.jpg,image
+img_neu_3,neutral,img_distractor_data/neutral/Camping 10.jpg,image
+img_neu_4,neutral,img_distractor_data/neutral/Grass 5.jpg,image
+img_neu_5,neutral,img_distractor_data/neutral/Grass 1.jpg,image
+img_neu_6,neutral,img_distractor_data/neutral/Grass 2.jpg,image
+img_neu_7,neutral,img_distractor_data/neutral/Grass 3.jpg,image
+img_neu_8,neutral,img_distractor_data/neutral/Street 3.jpg,image
+img_neu_9,neutral,img_distractor_data/neutral/Solar panel 1.jpg,image
+img_neu_10,neutral,img_distractor_data/neutral/Bar 1.jpg,image
+img_pos_1,positive,img_distractor_data/positive/Lake 9.jpg,image
+img_pos_2,positive,img_distractor_data/positive/Beach 2.jpg,image
+img_pos_3,positive,img_distractor_data/positive/Beach 1.jpg,image
+img_pos_4,positive,img_distractor_data/positive/Lake 12.jpg,image
+img_pos_5,positive,img_distractor_data/positive/Rainbow 2.jpg,image
+img_pos_6,positive,img_distractor_data/positive/Lake 1.jpg,image
+img_pos_7,positive,img_distractor_data/positive/Lake 12.jpg,image
+img_pos_8,positive,img_distractor_data/positive/Lake 14.jpg,image
+img_pos_9,positive,img_distractor_data/positive/Lake 15.jpg,image
+img_pos_10,positive,img_distractor_data/positive/Lake 2.jpg,image
+txt_neg_1,negative,text_distractor_data/negative/FR71.txt,text
+txt_neg_2,negative,text_distractor_data/negative/G350.txt,text
+txt_neg_3,negative,text_distractor_data/negative/T006.txt,text
+txt_neg_4,negative,text_distractor_data/negative/T005.txt,text
+txt_neg_5,negative,text_distractor_data/negative/FI17.txt,text
+txt_neg_6,negative,text_distractor_data/negative/P19.txt,text
+txt_neg_7,negative,text_distractor_data/negative/T020.txt,text
+txt_neg_8,negative,text_distractor_data/negative/FI9.txt,text
+txt_neg_9,negative,text_distractor_data/negative/FI42.txt,text
+txt_neg_10,negative,text_distractor_data/negative/FR56.txt,text
+txt_neu_1,neutral,text_distractor_data/neutral/SW037.txt,text
+txt_neu_2,neutral,text_distractor_data/neutral/SW036.txt,text
+txt_neu_3,neutral,text_distractor_data/neutral/SW035.txt,text
+txt_neu_4,neutral,text_distractor_data/neutral/FI10.txt,text
+txt_neu_5,neutral,text_distractor_data/neutral/FR105.txt,text
+txt_neu_6,neutral,text_distractor_data/neutral/FI11.txt,text
+txt_neu_7,neutral,text_distractor_data/neutral/FI15.txt,text
+txt_neu_8,neutral,text_distractor_data/neutral/FR24.txt,text
+txt_neu_9,neutral,text_distractor_data/neutral/T044.txt,text
+txt_neu_10,neutral,text_distractor_data/neutral/FI36.txt,text
+txt_pos_1,positive,text_distractor_data/positive/SW008.txt,text
+txt_pos_2,positive,text_distractor_data/positive/G351.txt,text
+txt_pos_3,positive,text_distractor_data/positive/FI16.txt,text
+txt_pos_4,positive,text_distractor_data/positive/FI25.txt,text
+txt_pos_5,positive,text_distractor_data/positive/FI33.txt,text
+txt_pos_6,positive,text_distractor_data/positive/T041.txt,text
+txt_pos_7,positive,text_distractor_data/positive/FR108.txt,text
+txt_pos_8,positive,text_distractor_data/positive/SW015.txt,text
+txt_pos_9,positive,text_distractor_data/positive/FR40.txt,text
+txt_pos_10,positive,text_distractor_data/positive/SP027.txt,text
