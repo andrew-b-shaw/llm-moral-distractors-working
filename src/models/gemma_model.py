@@ -1,3 +1,4 @@
+import os
 import torch
 import math
 from PIL import Image
@@ -102,7 +103,7 @@ class GemmaModel(LanguageModel):
             )
 
         # Load image
-        image = Image.open("/storage/llm-moral-distractors/image_distractor_data/image_data/" + image_path).convert("RGB")
+        image = Image.open(image_path).convert("RGB")
 
         # Processor encodes both text + image
         messages = [
@@ -170,8 +171,9 @@ class GemmaModel(LanguageModel):
         """
         if distractor is not None:
             if distractor["modality"] == Modality.IMAGE:
+                image_path = f"{os.path.abspath(os.getcwd())}/data/{distractor["file_path"]}"
                 return self._generate_with_image(
-                    image_path=distractor["image_path"],
+                    image_path=image_path,
                     system_prompt=system_prompt,
                     user_prompt=user_prompt,
                     max_new_tokens=max_tokens,
@@ -179,7 +181,10 @@ class GemmaModel(LanguageModel):
                     top_p=top_p
                 )
             else:
-                user_prompt = f"{distractor["text"]} {user_prompt}"
+                text_path = f"{os.path.abspath(os.getcwd())}/data/{distractor["file_path"]}"
+                with open(text_path, 'r') as f:
+                    distractor_text = f.read()
+                    user_prompt = f"{distractor_text} {user_prompt}"
 
         # Text-only fallback
         inputs = self._tokenizer(

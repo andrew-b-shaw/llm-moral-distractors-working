@@ -10,8 +10,7 @@ class Modality(StrEnum):
 class Distractor(TypedDict):
     id: str
     modality: Modality
-    text: str | None
-    image_path: str | None
+    file_path: str
 
 
 class Scenario(TypedDict):

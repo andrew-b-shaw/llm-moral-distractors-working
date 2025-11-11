@@ -52,25 +52,22 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
         self,
         scenario_series: pd.Series,
         question_format: str,
-        distractor_series: pd.Series | None,
-        distractor_modality: str | None
+        distractor_series: pd.Series | None
     ) -> list[MoralChoicePrompt]:
         """
         Process scenario and distractor into prompts
 
         :param scenario_series: the pandas series with the scenario data
         :param question_format: the format of the question (ab, compare, reddit, free)
-        :param distractor_series: the pandas series with the distractor data
-        :param distractor_modality: the modality of the distractor
+        :param distractor_series: the pandas series with the distractor data (optional)
         :return: a list of Prompts generated with the scenario and distractor
         """
 
         # Create Distractor
         distractor: Distractor | None = {
             "id": distractor_series["id"],
-            "modality": distractor_modality,
-            "text": distractor_series["text"] if distractor_modality == Modality.TEXT else None,
-            "image_path": distractor_series["image_path"] if distractor_modality == Modality.IMAGE else None
+            "modality": distractor_series["modality"],
+            "file_path": distractor_series["file_path"]
         } if distractor_series is not None else None
 
         # Create Scenario

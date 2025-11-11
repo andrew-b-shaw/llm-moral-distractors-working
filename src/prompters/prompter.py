@@ -33,16 +33,14 @@ class Prompter(Generic[AnyPrompt]):
         self,
         scenario_series: pd.Series,
         question_format: str,
-        distractor_series: pd.Series | None,
-        distractor_modality: str | None
+        distractor_series: pd.Series | None
     ) -> list[AnyPrompt]:
         """
         Process scenario and distractor into prompts
 
         :param scenario_series: the pandas series with the scenario data
         :param question_format: the question format (ab, compare, reddit, free)
-        :param distractor_series: the pandas series with the distractor data
-        :param distractor_modality: the modality of the distractor
+        :param distractor_series: the pandas series with the distractor data (optional)
         :return: a list of Prompts generated with the scenario and distractor
         """
         pass
@@ -79,10 +77,9 @@ class Prompter(Generic[AnyPrompt]):
 
         # Pre-process prompts
         prompts = self.pre_process(
+            question_format=question_format,
             scenario_series=scenario_series,
             distractor_series=distractor_series,
-            distractor_modality=distractor_series["modality"] if distractor_series is not None else None,
-            question_format=question_format
         )
 
         # Query model with prompts
