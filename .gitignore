@@ -2,9 +2,6 @@ transformers/
 api_keys/
 src/__pycache__/
 cache/
+.DS_Store
 python
-<<<<<<< HEAD
-*.pkl
-=======
 data/responses/
->>>>>>> 27d7b97a073cab63ec32abebcd58e897c8411465
