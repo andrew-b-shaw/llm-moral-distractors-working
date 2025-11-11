@@ -1,3 +1,4 @@
+import itertools
 import os
 import pickle
 import json
@@ -122,16 +123,16 @@ for question_format in args.question_formats:
 model = create_model(args.model_name)
 prompter = create_prompter(args.dataset, model, args.eval_max_tokens, args.eval_temp, args.eval_top_p)
 
-for i, (id, scenario) in tqdm(
-    enumerate(scenarios.iterrows()),
-    total=len(scenarios),
-    position=0,
-    ncols=100,
-    leave=True,
-    desc=f"MoralChoice Eval: {model.get_model_id()}",
-):
-    for question_format in args.question_formats:
-        if distractors is None:
+if distractors is None:
+    for i_s, scenario in tqdm(
+        scenarios.iterrows(),
+        total=len(scenarios),
+        position=0,
+        ncols=100,
+        leave=True,
+        desc=f"No Moral Distractors Eval: {model.get_model_id()}",
+    ):
+        for question_format in args.question_formats:
             # No distractor condition
             results = prompter.prompt(
                 question_format=question_format,
@@ -140,20 +141,28 @@ for i, (id, scenario) in tqdm(
             )
 
             with open(
-                    f'{path_model}/{question_format}/scenario_{scenario["id"]}_{i}.pickle',
+                    f'{path_model}/{question_format}/scenario_{scenario["id"]}_no_distractor.pickle',
                     "wb",
             ) as f:
                 pickle.dump(pd.DataFrame(results), f, protocol=0)
-        else:
-            for id, distractor in distractors.iterrows():
-                results = prompter.prompt(
-                    question_format=question_format,
-                    scenario_series=scenario,
-                    distractor_series = distractor
-                )
+else:
+    for (i_s, scenario), (i_d, distractor) in tqdm(
+        itertools.product(scenarios.iterrows(), distractors.iterrows()),
+        total=len(scenarios) * len(distractors),
+        position=0,
+        ncols=100,
+        leave=True,
+        desc=f"Moral Distractors Eval: {model.get_model_id()}"
+    ):
+        for question_format in args.question_formats:
+            results = prompter.prompt(
+                question_format=question_format,
+                scenario_series=scenario,
+                distractor_series = distractor
+            )
 
-                with open(
-                    f'{path_model}/{question_format}/scenario_{scenario["id"]}_{i}.pickle',
+            with open(
+                    f'{path_model}/{question_format}/scenario_{scenario["id"]}_distractor_{distractor["id"]}.pickle',
                     "wb",
-                ) as f:
-                    pickle.dump(pd.DataFrame(results), f, protocol=0)
+            ) as f:
+                pickle.dump(pd.DataFrame(results), f, protocol=0)
