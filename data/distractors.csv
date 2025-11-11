@@ -1,0 +1,71 @@
+id,sentiment,file_path,modality
+0,negative,img_distractor_data/negative/Garbage dump 2.jpg,img_distractor_data
+1,negative,img_distractor_data/negative/Garbage dump 3.jpg,img_distractor_data
+2,negative,img_distractor_data/negative/Dirt 1.jpg,img_distractor_data
+3,negative,img_distractor_data/negative/Garbage dump 4.jpg,img_distractor_data
+4,negative,img_distractor_data/negative/War 8.jpg,img_distractor_data
+5,negative,img_distractor_data/negative/Jail 2.jpg,img_distractor_data
+6,negative,img_distractor_data/negative/Garbage dump 6.jpg,img_distractor_data
+7,negative,img_distractor_data/negative/Destruction 4.jpg,img_distractor_data
+8,negative,img_distractor_data/negative/Destruction 6.jpg,img_distractor_data
+9,negative,img_distractor_data/negative/Destruction 7.jpg,img_distractor_data
+10,negative,img_distractor_data/negative/Destruction 3.jpg,img_distractor_data
+11,negative,img_distractor_data/negative/Explosion 5.jpg,img_distractor_data
+12,negative,img_distractor_data/negative/Car crash 1.jpg,img_distractor_data
+13,negative,img_distractor_data/negative/Car crash 3.jpg,img_distractor_data
+14,negative,img_distractor_data/negative/Car crash 2.jpg,img_distractor_data
+15,neutral,img_distractor_data/neutral/Road 1.jpg,img_distractor_data
+16,neutral,img_distractor_data/neutral/Thunderstorm 2.jpg,img_distractor_data
+17,neutral,img_distractor_data/neutral/Camping 10.jpg,img_distractor_data
+18,neutral,img_distractor_data/neutral/Grass 5.jpg,img_distractor_data
+19,neutral,img_distractor_data/neutral/Grass 1.jpg,img_distractor_data
+20,neutral,img_distractor_data/neutral/Grass 2.jpg,img_distractor_data
+21,neutral,img_distractor_data/neutral/Grass 3.jpg,img_distractor_data
+22,neutral,img_distractor_data/neutral/Street 3.jpg,img_distractor_data
+23,neutral,img_distractor_data/neutral/Solar panel 1.jpg,img_distractor_data
+24,neutral,img_distractor_data/neutral/Bar 1.jpg,img_distractor_data
+25,positive,img_distractor_data/positive/Lake 9.jpg,img_distractor_data
+26,positive,img_distractor_data/positive/Lake 8.jpg,img_distractor_data
+27,positive,img_distractor_data/positive/Beach 2.jpg,img_distractor_data
+28,positive,img_distractor_data/positive/Beach 1.jpg,img_distractor_data
+29,positive,img_distractor_data/positive/Fireworks 1.jpg,img_distractor_data
+30,positive,img_distractor_data/positive/Lake 10.jpg,img_distractor_data
+31,positive,img_distractor_data/positive/Lake 12.jpg,img_distractor_data
+32,positive,img_distractor_data/positive/Fireworks 2.jpg,img_distractor_data
+33,positive,img_distractor_data/positive/Lake 13.jpg,img_distractor_data
+34,positive,img_distractor_data/positive/Rainbow 2.jpg,img_distractor_data
+35,positive,img_distractor_data/positive/Lake 1.jpg,img_distractor_data
+36,positive,img_distractor_data/positive/Lake 14.jpg,img_distractor_data
+37,positive,img_distractor_data/positive/Rainbow 1.jpg,img_distractor_data
+38,positive,img_distractor_data/positive/Lake 15.jpg,img_distractor_data
+39,positive,img_distractor_data/positive/Lake 2.jpg,img_distractor_data
+40,negative,text_distractor_data/negative/FR71.txt,text_distractor_data
+41,negative,text_distractor_data/negative/G350.txt,text_distractor_data
+42,negative,text_distractor_data/negative/T006.txt,text_distractor_data
+43,negative,text_distractor_data/negative/T005.txt,text_distractor_data
+44,negative,text_distractor_data/negative/FI17.txt,text_distractor_data
+45,negative,text_distractor_data/negative/P19.txt,text_distractor_data
+46,negative,text_distractor_data/negative/T020.txt,text_distractor_data
+47,negative,text_distractor_data/negative/FI9.txt,text_distractor_data
+48,negative,text_distractor_data/negative/FI42.txt,text_distractor_data
+49,negative,text_distractor_data/negative/FR56.txt,text_distractor_data
+50,neutral,text_distractor_data/neutral/SW037.txt,text_distractor_data
+51,neutral,text_distractor_data/neutral/SW036.txt,text_distractor_data
+52,neutral,text_distractor_data/neutral/SW035.txt,text_distractor_data
+53,neutral,text_distractor_data/neutral/FI10.txt,text_distractor_data
+54,neutral,text_distractor_data/neutral/FR105.txt,text_distractor_data
+55,neutral,text_distractor_data/neutral/FI11.txt,text_distractor_data
+56,neutral,text_distractor_data/neutral/FI15.txt,text_distractor_data
+57,neutral,text_distractor_data/neutral/FR24.txt,text_distractor_data
+58,neutral,text_distractor_data/neutral/T044.txt,text_distractor_data
+59,neutral,text_distractor_data/neutral/FI36.txt,text_distractor_data
+60,positive,text_distractor_data/positive/SW008.txt,text_distractor_data
+61,positive,text_distractor_data/positive/G351.txt,text_distractor_data
+62,positive,text_distractor_data/positive/FI16.txt,text_distractor_data
+63,positive,text_distractor_data/positive/FI25.txt,text_distractor_data
+64,positive,text_distractor_data/positive/FI33.txt,text_distractor_data
+65,positive,text_distractor_data/positive/T041.txt,text_distractor_data
+66,positive,text_distractor_data/positive/FR108.txt,text_distractor_data
+67,positive,text_distractor_data/positive/SW015.txt,text_distractor_data
+68,positive,text_distractor_data/positive/FR40.txt,text_distractor_data
+69,positive,text_distractor_data/positive/SP027.txt,text_distractor_data
