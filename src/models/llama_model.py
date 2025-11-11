@@ -15,15 +15,16 @@ class LlamaModelResponse(LanguageModelResponse):
     _tokenizer: LlamaTokenizer
 
     def __init__(
-            self,
-            timestamp: str,
-            answer: str,
-            answer_raw: str,
-            output: any,
-            tokenizer: LlamaTokenizer
+        self,
+        timestamp: str,
+        answer: str,
+        answer_raw: str,
+        output: any,
+        tokenizer: LlamaTokenizer
     ):
         super().__init__(timestamp, answer, answer_raw)
         self._output = output
+        print(type(output))
         self._tokenizer = tokenizer
 
     def get_answer_prob(self, answer: str) -> float:
@@ -75,17 +76,17 @@ class LlamaModel(LanguageModel):
             pretrained_model_name_or_path=self._model_name, cache_dir=PATH_HF_CACHE
         )
 
-    def get_top_p_answer(
+    def query(
             self,
-            prompt_base: str,
-            prompt_system: str,
+            user_prompt: str,
+            system_prompt: str,
             max_tokens: int,
             temperature: float,
             top_p: float,
             image_path: str = None,
     ) -> LlamaModelResponse:
         # Greedy Search
-        text = f"{prompt_system}{prompt_base}"
+        text = f"{system_prompt}{user_prompt}"
         if image_path:
             image = Image.open(image_path).convert("RGB")
             inputs = self._processor(
@@ -116,7 +117,7 @@ class LlamaModel(LanguageModel):
             response.sequences[0], skip_special_tokens=True
         ).strip()
         answer_raw = completion
-        answer = completion[len(prompt_system) + len(prompt_base) - 1:]
+        answer = completion[len(system_prompt) + len(user_prompt) - 1:]
 
         return LlamaModelResponse(
             timestamp=get_timestamp(),
