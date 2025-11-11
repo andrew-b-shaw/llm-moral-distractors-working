@@ -78,7 +78,7 @@ class GemmaModel(LanguageModel):
 
         try:
             # Vision-capable Gemma models have a processor
-            self._processor = AutoProcessor.from_pretrained(self._model_name, cache_dir=PATH_HF_CACHE, )
+            self._processor = AutoProcessor.from_pretrained(self._model_name, cache_dir=PATH_HF_CACHE)
         except Exception as e:
             self._processor = None
             print(e)
@@ -139,7 +139,7 @@ class GemmaModel(LanguageModel):
 
         # Decode and clean
         answer_raw = self._processor.decode(output.sequences[0], skip_special_tokens=True)
-        answer = answer_raw[len(system_prompt) + len(user_prompt) - 1:].strip()
+        answer = answer_raw[len(system_prompt) + len(user_prompt) + 1:].strip()
 
         return GemmaModelResponse(
             timestamp=get_timestamp(),
@@ -191,21 +191,21 @@ class GemmaModel(LanguageModel):
             f"{system_prompt} {user_prompt}",
             return_tensors="pt"
         ).to(self._device)
-
-        output = self._model.generate(
-            **inputs,
-            max_new_tokens=max_tokens,
-            do_sample=True,
-            temperature=temperature,
-            top_p=top_p,
-            pad_token_id=self._tokenizer.eos_token_id,
-            output_scores=True,
-            output_logits=True,
-            return_dict_in_generate=True,
-        )
+        with torch.no_grad():
+            output = self._model.generate(
+                **inputs,
+                max_new_tokens=max_tokens,
+                do_sample=True,
+                temperature=temperature,
+                top_p=top_p,
+                pad_token_id=self._tokenizer.eos_token_id,
+                output_scores=True,
+                output_logits=True,
+                return_dict_in_generate=True,
+            )
 
         answer_raw = self._tokenizer.decode(output.sequences[0], skip_special_tokens=True)
-        answer = answer_raw[len(system_prompt) + len(user_prompt) - 1:].strip()
+        answer = answer_raw[len(system_prompt) + len(user_prompt) + 1:].strip()
 
         return GemmaModelResponse(
             timestamp=get_timestamp(),

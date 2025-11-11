@@ -1,28 +1,17 @@
-import pandas as pd
-from src.models.gemma_model import GemmaModel
-from src.prompters.moralchoice_prompter import MoralChoicePrompter
+import torch
+torch.cuda.empty_cache()
 
-distractor_series = pd.Series({
-    "distractor_id": "test",
-    "modality": "text",
-    "text": "test",
-    "img_path": "test"
-})
-
-scenario_series = pd.Series({
-    "scenario_id": "test",
-    "context": "Say hi",
-    "action1": "test",
-    "action2": "test"
-})
-
-gemma_model: GemmaModel = GemmaModel("google/gemma-3-4b-it")
-prompter = MoralChoicePrompter(
-    model=gemma_model,
-    max_tokens=10,
-    temperature=0.1,
-    top_p=0.5
-)
-
-result = prompter.prompt(scenario_series, "ab_moralchoice", distractor_series)
-print(result)
+# import pandas as pd
+# from src.models.gemma_model import GemmaModel
+#
+# gemma_model: GemmaModel = GemmaModel("google/gemma-3-4b-it")
+# response = gemma_model._generate_with_image(
+#     image_path="/storage/llm-moral-distractors/data/img_distractor_data/negative/Car crash 1.jpg",
+#     system_prompt="",
+#     user_prompt="What's in this image?",
+#     max_new_tokens=256,
+#     temperature=0.5,
+#     top_p=0.5
+# )
+#
+# print(response.answer_raw)

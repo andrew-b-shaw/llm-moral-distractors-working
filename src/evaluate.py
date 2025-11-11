@@ -1,9 +1,10 @@
 import itertools
 import os
 import pickle
-import json
 import argparse
 import sys
+import torch
+import gc
 
 import pandas as pd
 from tqdm import tqdm
@@ -120,6 +121,8 @@ for question_format in args.question_formats:
 ################################################################################################
 # RUN EVALUATION
 ################################################################################################
+gc.collect()
+torch.cuda.empty_cache()
 model = create_model(args.model_name)
 prompter = create_prompter(args.dataset, model, args.eval_max_tokens, args.eval_temp, args.eval_top_p)
 
