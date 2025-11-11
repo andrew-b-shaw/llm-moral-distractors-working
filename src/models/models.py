@@ -4,11 +4,8 @@ import sys
 import time
 import math
 from abc import abstractmethod
-from src.models.openai_model import OpenAIModel
-from src.models.gemma_model import GemmaModel
-from src.models.llama_model import LlamaModel
 
-from src.prompters.prompter import Distractor
+from src.prompters.prompt import Distractor
 
 API_TIMEOUTS = [1, 2, 4, 8, 16, 32]
 
@@ -41,20 +38,99 @@ MODELS = dict(
             "likelihood_access": True,
             "endpoint": None,
         },
-        "google/gemma-2-2b-it": {
+        "google/gemma-3-1b-pt": {
             "company": "google",
             "model_class": "GemmaModel",
-            "model_name": "google/gemma-2-2b-it",
+            "model_name": "google/gemma-3-1b-pt",
             "8bit": False,
             "likelihood_access": True,
             "endpoint": None,
         },
+        "google/gemma-3-1b-it": {
+            "company": "google",
+            "model_class": "GemmaModel",
+            "model_name": "google/gemma-3-1b-it",
+            "8bit": False,
+            "likelihood_access": True,
+            "endpoint": None,
+        },
+        "google/gemma-3-4b-pt": {
+            "company": "google",
+            "model_class": "GemmaModel",
+            "model_name": "google/gemma-3-4b-pt",
+            "8bit": False,
+            "likelihood_access": True,
+            "endpoint": None,
+        },
+        "google/gemma-3-4b-it": {
+            "company": "google",
+            "model_class": "GemmaModel",
+            "model_name": "google/gemma-3-4b-it",
+            "8bit": False,
+            "likelihood_access": True,
+            "endpoint": None,
+        },
+        "google/gemma-3-12b-pt": {
+            "company": "google",
+            "model_class": "GemmaModel",
+            "model_name": "google/gemma-3-12b-pt",
+            "8bit": False,
+            "likelihood_access": True,
+            "endpoint": None,
+        },
+        "google/gemma-3-12b-it": {
+            "company": "google",
+            "model_class": "GemmaModel",
+            "model_name": "google/gemma-3-12b-it",
+            "8bit": False,
+            "likelihood_access": True,
+            "endpoint": None,
+        },
+        "google/gemma-3-27b-pt": {
+            "company": "google",
+            "model_class": "GemmaModel",
+            "model_name": "google/gemma-3-27b-pt",
+            "8bit": False,
+            "likelihood_access": True,
+            "endpoint": None,
+        },
+        "google/gemma-3-27b-it": {
+            "company": "google",
+            "model_class": "GemmaModel",
+            "model_name": "google/gemma-3-27b-it",
+            "8bit": False,
+            "likelihood_access": True,
+            "endpoint": None,
+        }
     }
 )
 
 ####################################################################################
 # MODEL WRAPPERS
 ####################################################################################
+class LanguageModelResponse:
+    """Generic LanguageModelResponse Class"""
+
+    timestamp: str
+    answer: str
+    answer_raw: str
+
+    def __init__(self, timestamp: str, answer_raw: str, answer: str):
+        self.timestamp = timestamp
+        self.answer_raw = answer_raw
+        self.answer = answer
+
+    @abstractmethod
+    def get_answer_prob(self, answer: str) -> float:
+        """
+        Returns probability that the output **starts** with given string
+
+        :param answer: the string to calculate the probability of
+        :return: the probability that the output **starts** with the given string
+        """
+        pass
+
+
 class LanguageModel:
     """ Generic LanguageModel Class"""
     
@@ -73,34 +149,20 @@ class LanguageModel:
         return self._model_id
 
     @abstractmethod
-    def get_greedy_answer(
-        self, prompt_base: str, prompt_system: str, max_tokens: int
-    ) -> str:
-        """
-        Gets greedy answer for prompt_base
-
-        :param prompt_base:     base prompt
-        :param prompt_sytem:    system instruction for chat endpoint of OpenAI
-        :return:                answer string
-        """
-        pass
-
-    @abstractmethod
-    def get_top_p_answer(
+    def query(
         self,
-        distractor: Distractor | None,
-        prompt_base: str,
-        prompt_system: str,
-        question_type: str,
-        max_tokens: int,
-        temperature: float,
-        top_p: float,
-    ) -> dict[str, any]:
+        user_prompt: str,
+        system_prompt: str,
+        max_tokens: int = 256,
+        temperature: float = 0.7,
+        top_p: float = 0.9,
+        distractor: Distractor | None = None
+    ) -> LanguageModelResponse:
         """
         Gets answer using sampling (based on top_p and temperature)
 
         :param distractor:      the distractor to inject
-        :param prompt_base:     base prompt
+        :param user_prompt:     base prompt
         :param prompt_sytem:    system instruction for chat endpoint of OpenAI
         :param max_tokens       max tokens in answer
         :param temperature      temperature for top_p sampling
@@ -110,14 +172,4 @@ class LanguageModel:
         pass
 
 
-####################################################################################
-# MODEL CREATOR
-####################################################################################
-def create_model(model_name):
-    """Init Models from model_name only"""
-    if model_name in MODELS:
-        class_name = MODELS[model_name]["model_class"]
-        cls = getattr(sys.modules[__name__], class_name)
-        return cls(model_name)
 
-    raise ValueError(f"Unknown Model '{model_name}'")

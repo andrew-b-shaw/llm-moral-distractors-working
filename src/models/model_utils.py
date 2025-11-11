@@ -36,7 +36,7 @@ def get_raw_likelihoods_from_answer(
     return likelihoods
 
 
-def get_timestamp():
+def get_timestamp() -> str:
     """
     Generate timestamp of format Y-M-D_H:M:S
     """
