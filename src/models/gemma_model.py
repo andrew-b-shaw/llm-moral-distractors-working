@@ -139,7 +139,7 @@ class GemmaModel(LanguageModel):
 
         # Decode and clean
         answer_raw = self._processor.decode(output.sequences[0], skip_special_tokens=True)
-        answer = answer_raw[len(system_prompt) + len(user_prompt) + 1:].strip()
+        answer = answer_raw[len(prompt):].strip()
 
         return GemmaModelResponse(
             timestamp=get_timestamp(),
@@ -187,8 +187,9 @@ class GemmaModel(LanguageModel):
                     user_prompt = f"{distractor_text} {user_prompt}"
 
         # Text-only fallback
+        prompt = f"{system_prompt} {user_prompt}"
         inputs = self._tokenizer(
-            f"{system_prompt} {user_prompt}",
+            prompt,
             return_tensors="pt"
         ).to(self._device)
         with torch.no_grad():
@@ -205,7 +206,7 @@ class GemmaModel(LanguageModel):
             )
 
         answer_raw = self._tokenizer.decode(output.sequences[0], skip_special_tokens=True)
-        answer = answer_raw[len(system_prompt) + len(user_prompt) + 1:].strip()
+        answer = answer_raw[len(prompt):].strip()
 
         return GemmaModelResponse(
             timestamp=get_timestamp(),
