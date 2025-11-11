@@ -1,23 +1,10 @@
-from abc import abstractmethod
-from typing import TypedDict, TypeVar, Generic
-
 import pandas as pd
 
-from data.templates.question_templates import QuestionTemplate, QUESTION_TEMPLATES
+from abc import abstractmethod
+from typing import TypeVar, Generic
+
 from src.models.models import LanguageModel, LanguageModelResponse
-from src.prompters.distractor import Distractor
-
-
-class Scenario(TypedDict):
-    scenario_id: str
-    context: str
-
-
-class Prompt(TypedDict):
-    scenario: Scenario
-    distractor: Distractor | None
-    system_prompt: str
-    user_prompt: str
+from src.prompters.prompt import Prompt, Scenario, Distractor
 
 
 AnyPrompt = TypeVar("AnyPrompt", bound=Prompt)
@@ -26,26 +13,26 @@ AnyPrompt = TypeVar("AnyPrompt", bound=Prompt)
 class Prompter(Generic[AnyPrompt]):
     model: LanguageModel
     max_tokens: int
-    eval_temp: float
-    eval_top_p: float
+    temperature: float
+    top_p: float
 
     def __init__(
         self,
         model: LanguageModel,
         max_tokens: int,
-        eval_temp: float,
-        eval_top_p: float
+        temperature: float,
+        top_p: float
     ):
         self.model = model
         self.max_tokens = max_tokens
-        self.eval_temp = eval_temp
-        self.eval_top_p = eval_top_p
+        self.temperature = temperature
+        self.top_p = top_p
 
     @abstractmethod
     def pre_process(
         self,
         scenario_series: pd.Series,
-        question_type: str,
+        question_format: str,
         distractor_series: pd.Series | None,
         distractor_modality: str | None
     ) -> list[AnyPrompt]:
@@ -53,7 +40,7 @@ class Prompter(Generic[AnyPrompt]):
         Process scenario and distractor into prompts
 
         :param scenario_series: the pandas series with the scenario data
-        :param question_type: the question type (ab, compare, reddit, free)
+        :param question_format: the question format (ab, compare, reddit, free)
         :param distractor_series: the pandas series with the distractor data
         :param distractor_modality: the modality of the distractor
         :return: a list of Prompts generated with the scenario and distractor
@@ -77,15 +64,15 @@ class Prompter(Generic[AnyPrompt]):
 
     def prompt(
         self,
+        question_format: str,
         scenario_series: pd.Series,
-        question_type: str,
         distractor_series: pd.Series | None = None
     ) -> list[dict[str, any]]:
         """
         Prompts the model with the given scenario and distractor data
 
         :param scenario_series: the pandas series with the scenario data
-        :param question_type: the question type (ab, compare, reddit, free)
+        :param question_format: the format of the question (ab, compare, reddit, free)
         :param distractor_series: the pandas series with the distractor data
         :return: the results from the generated prompts
         """
@@ -95,22 +82,19 @@ class Prompter(Generic[AnyPrompt]):
             scenario_series=scenario_series,
             distractor_series=distractor_series,
             distractor_modality=distractor_series["modality"] if distractor_series is not None else None,
-            question_type=question_type
+            question_format=question_format
         )
-
-        # TODO: join distractor with scenario
 
         # Query model with prompts
         responses = []
         for prompt in prompts:
-            response = self.model.get_top_p_answer(
+            response = self.model.query(
                 distractor=prompt["distractor"],
-                prompt_base=prompt["user_prompt"],
-                prompt_system=prompt["system_prompt"],
-                question_type=question_type,
+                user_prompt=prompt["user_prompt"],
+                system_prompt=prompt["system_prompt"],
                 max_tokens=self.max_tokens,
-                temperature=self.eval_temp,
-                top_p=self.eval_top_p
+                temperature=self.temperature,
+                top_p=self.top_p
             )
             responses.append(response)
 

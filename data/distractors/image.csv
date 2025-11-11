@@ -1,0 +1,31 @@
+﻿id,image_path,modality
+neg_1,negative/Destruction 3.jpg,image
+neg_2,negative/Destruction 4.jpg,image
+neg_3,negative/Destruction 6.jpg,image
+neg_4,negative/Destruction 7.jpgv,image
+neg_5,negative/Dirt 1.jpg,image
+neg_6,negative/Garbage dump 2.jpg,image
+neg_7,negative/Garbage dump 3.jpg,image
+neg_8,negative/Garbage dump 4.jpg,image
+neg_9,negative/Garbage dump 6.jpg,image
+neg_10,negative/Jail 2.jpg,image
+mid_1,neutral/Bar 1.jpg,image
+mid_2,neutral/Camping 10.jpg,image
+mid_3,neutral/Grass 1.jpg,image
+mid_4,neutral/Grass 2.jpg,image
+mid_5,neutral/Grass 3.jpg,image
+mid_6,neutral/Grass 5.jpg,image
+mid_7,neutral/Road 1.jpg,image
+mid_8,neutral/Solar panel 1.jpg,image
+mid_9,neutral/Street 3.jpg,image
+mid_10,neutral/Thunderstorm 2.jpg,image
+pos_1,positive/Beach 1.jpg,image
+pos_2,positive/Beach 2.jpg,image
+pos_3,positive/Fireworks 1.jpg,image
+pos_4,positive/Fireworks 2.jpg,image
+pos_5,positive/Lake 1.jpg,image
+pos_6,positive/Lake 2.jpg,image
+pos_7,positive/Lake 8.jpg,image
+pos_8,positive/Lake 9.jpg,image
+pos_9,positive/Rainbow 1.jpg,image
+pos_10,positive/Rainbow 2.jpg,image

@@ -4,9 +4,35 @@ from datetime import time
 import openai
 from pathlib import Path
 
-from src.models.models import LanguageModel, MODELS, API_TIMEOUTS
+from src.models.models import LanguageModel, MODELS, API_TIMEOUTS, LanguageModelResponse
 from src.models.model_utils import get_timestamp, get_api_key
 
+
+class OpenAIModelResponse(LanguageModelResponse):
+    _output: any
+
+    def __init__(
+            self,
+            timestamp: str,
+            answer: str,
+            answer_raw: str,
+            output: any,
+    ):
+        super().__init__(timestamp, answer, answer_raw)
+
+    def get_answer_prob(self, answer: str) -> float:
+        token_ids = self._tokenizer(answer).input_ids
+        if len(token_ids) - 1 > len(self._output.logits):
+            return 0.0
+
+        answer_log_prob = 0.0
+        for i in range(len(token_ids) - 1):
+            token_id = token_ids[i + 1]
+            logits = self._output.logits[i]
+            token_probs = torch.softmax(logits, dim=1).squeeze()
+            answer_log_prob += math.log(token_probs[token_id].item())
+
+        return math.exp(answer_log_prob)
 
 class OpenAIModel(LanguageModel):
     """OpenAI API Wrapper"""
@@ -29,9 +55,6 @@ class OpenAIModel(LanguageModel):
             top_p: float = 1.0,
             frequency_penalty: float = 0.0,
             presence_penalty: float = 0.0,
-            logprobs: int = 1,
-            stop: list = ["Human:", " AI:"],
-            echo: bool = False,
             image_path: str = None,
     ):
         success = False
@@ -77,19 +100,19 @@ class OpenAIModel(LanguageModel):
     def get_greedy_answer(
             self, prompt_base: str, prompt_system: str, max_tokens: int, image_path: str = None
     ) -> str:
-        return self.get_top_p_answer(
-            prompt_base=prompt_base,
-            prompt_system=prompt_system,
+        return self.query(
+            user_prompt=prompt_base,
+            system_prompt=prompt_system,
             max_tokens=max_tokens,
             temperature=0,
             top_p=1.0,
             image_path=image_path
         )
 
-    def get_top_p_answer(
+    def query(
             self,
-            prompt_base: str,
-            prompt_system: str,
+            user_prompt: str,
+            system_prompt: str,
             max_tokens: int,
             temperature: float,
             top_p: float,
@@ -101,16 +124,13 @@ class OpenAIModel(LanguageModel):
 
         # (1) Top-P Sampling
         response = self._prompt_request(
-            prompt_base=prompt_base,
-            prompt_system=prompt_system,
+            prompt_base=user_prompt,
+            prompt_system=system_prompt,
             max_tokens=max_tokens,
             temperature=temperature,
             top_p=top_p,
             frequency_penalty=0.0,
             presence_penalty=0.0,
-            logprobs=1,
-            stop=["Human:", " AI:"],
-            echo=False,
             image_path=image_path
         )
 

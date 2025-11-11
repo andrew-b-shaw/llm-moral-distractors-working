@@ -1,8 +1,8 @@
 import pandas as pd
 
 from data.templates.question_templates import QuestionTemplate, QUESTION_TEMPLATES
-from src.prompters.prompter import Prompter, Prompt, Scenario
-from src.prompters.distractor import Distractor
+from src.prompters.prompter import Prompter
+from src.prompters.prompt import Prompt, Scenario, Distractor
 
 
 class RedditPrompter(Prompter[Prompt]):
