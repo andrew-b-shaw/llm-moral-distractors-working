@@ -3,8 +3,8 @@ import pandas as pd
 from data.templates.question_templates import QUESTION_TEMPLATES
 from data.templates.response_templates import A_TOKENS, B_TOKENS, YES_TOKENS, NO_TOKENS
 from src.models.models import LanguageModelResponse
-from src.prompters.prompter import Scenario, Prompt, Prompter
-from src.prompters.distractor import Distractor
+from src.prompters.prompter import Prompter
+from src.prompters.prompt import Prompt, Scenario, Distractor, Modality
 
 
 class MoralChoiceScenario(Scenario):
@@ -12,19 +12,28 @@ class MoralChoiceScenario(Scenario):
 
 
 class MoralChoicePrompt(Prompt):
-    question_type: str
+    question_format: str
     question_ordering: int
 
 
 class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
-    def generate_prompt(
+    def _generate_prompt(
         self,
         scenario: MoralChoiceScenario,
-        question_type: str,
+        question_format: str,
         question_ordering: int,
         distractor: Distractor | None = None
     ) -> MoralChoicePrompt:
-        question_template = QUESTION_TEMPLATES[question_type]
+        """
+        Generate a prompt from the given information
+        :param scenario: the scenario to prompt with
+        :param question_format: the format of the question ("ab", "compare", "free")
+        :param question_ordering: the ordering of the options (0, 1)
+        :param distractor: the distractor to prompt with
+        :return: a Prompt containing the given information
+        """
+
+        question_template = QUESTION_TEMPLATES[f"{question_format}_moralchoice"]
         prompt: MoralChoicePrompt = {
             "scenario": scenario,
             "distractor": distractor,
@@ -34,7 +43,7 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
                 scenario["actions"][question_ordering],
                 scenario["actions"][1 - question_ordering]
             ),
-            "question_type": question_type,
+            "question_format": question_format,
             "question_ordering": question_ordering
         }
         return prompt
@@ -42,35 +51,42 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
     def pre_process(
         self,
         scenario_series: pd.Series,
-        question_type: str,
+        question_format: str,
         distractor_series: pd.Series | None,
         distractor_modality: str | None
     ) -> list[MoralChoicePrompt]:
+        """
+        Process scenario and distractor into prompts
+
+        :param scenario_series: the pandas series with the scenario data
+        :param question_format: the format of the question (ab, compare, reddit, free)
+        :param distractor_series: the pandas series with the distractor data
+        :param distractor_modality: the modality of the distractor
+        :return: a list of Prompts generated with the scenario and distractor
+        """
+
         # Create Distractor
         distractor: Distractor | None = {
+            "id": distractor_series["id"],
             "modality": distractor_modality,
-            "distractor_id": distractor_series["distractor_id"],
-            "text": distractor_series["text"] if distractor_modality == "text" else None,
-            "img": distractor_series["img_path"] if distractor_modality == "img" else None
+            "text": distractor_series["text"] if distractor_modality == Modality.TEXT else None,
+            "image_path": distractor_series["image_path"] if distractor_modality == Modality.IMAGE else None
         } if distractor_series is not None else None
 
         # Create Scenario
         scenario: MoralChoiceScenario = {
-            "scenario_id": scenario_series["scenario_id"],
+            "id": scenario_series["id"],
             "context": scenario_series["context"],
             "actions": [scenario_series["action1"], scenario_series["action2"]]
         }
 
-        print(distractor)
-        print(scenario)
-
         # Generate prompts with all orderings
         prompts = []
         for question_ordering in [0, 1]:
-            prompt = self.generate_prompt(
+            prompt = self._generate_prompt(
                 scenario=scenario,
                 distractor=distractor,
-                question_type=question_type,
+                question_format=question_format,
                 question_ordering=question_ordering
             )
             prompts.append(prompt)
@@ -81,7 +97,15 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
         prompt: MoralChoicePrompt,
         response: LanguageModelResponse
     ) -> dict[str, any]:
-        if prompt["question_type"].startswith("ab"):
+        """
+        Process model response into result
+
+        :param prompt: the Prompt used to query the model
+        :param response: the model's response to the query
+        :return: the results as a dict
+        """
+
+        if prompt["question_format"].startswith("ab"):
             # A/B question format
             action_tokens_dict = {
                 "A": A_TOKENS,
@@ -105,14 +129,15 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
 
         result = {
             "model_id": self.model.get_model_id(),
-            "question_type": prompt["question_type"],
+            "question_format": prompt["question_format"],
             "question_ordering": prompt["question_ordering"],
             "system_prompt": prompt["system_prompt"],
             "user_prompt": prompt["user_prompt"],
             "eval_technique": "top_p_sampling",
-            "eval_top_p": self.eval_top_p,
-            "eval_temperature": self.eval_temp,
-            "distractor_id": prompt["distractor"]["distractor_id"] if prompt["distractor"] is not None else None,
+            "eval_top_p": self.top_p,
+            "eval_temperature": self.temperature,
+            "scenario_id": prompt["scenario"]["id"],
+            "distractor_id": prompt["distractor"]["id"] if prompt["distractor"] is not None else None,
             "answer_raw": response.answer_raw,
             "answer": response.answer,
             "action_0_prob": 0.0,
@@ -120,10 +145,7 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
         }
 
         for action, tokens in action_tokens_dict.items():
-            print(action)
             for token in tokens:
-                print(token)
-                print(response.get_answer_prob(token))
                 result[f"action_{action_mapping_dict[action]}_prob"] += response.get_answer_prob(token)
 
         return result

@@ -3,30 +3,41 @@ import math
 from PIL import Image
 from huggingface_hub import login
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoProcessor, GemmaTokenizer
+from transformers.generation.utils import GenerateDecoderOnlyOutput
 
 from src.config import PATH_HF_CACHE, PATH_OFFLOAD
 from src.models.model_utils import get_timestamp, get_api_key
 from src.models.models import LanguageModel, MODELS, LanguageModelResponse
-from src.prompters.distractor import Distractor
+from src.prompters.prompt import Distractor, Modality
 
 
 class GemmaModelResponse(LanguageModelResponse):
-    _output: any
+    _output: GenerateDecoderOnlyOutput
     _tokenizer: GemmaTokenizer
 
     def __init__(
         self,
         timestamp: str,
-        answer: str,
         answer_raw: str,
-        output: any,
+        answer: str,
+        output: GenerateDecoderOnlyOutput,
         tokenizer: GemmaTokenizer
     ):
-        super().__init__(timestamp, answer, answer_raw)
+        super().__init__(
+            timestamp=timestamp,
+            answer_raw=answer_raw,
+            answer=answer
+        )
         self._output = output
         self._tokenizer = tokenizer
 
     def get_answer_prob(self, answer: str) -> float:
+        """
+        Returns probability that the output **starts** with given string
+
+        :param answer: the string to calculate the probability of
+        :return: the probability that the output **starts** with the given string
+        """
         token_ids = self._tokenizer(answer).input_ids
         if len(token_ids) - 1 > len(self._output.logits):
             return 0.0
@@ -41,7 +52,7 @@ class GemmaModelResponse(LanguageModelResponse):
         return math.exp(answer_log_prob)
 
 class GemmaModel(LanguageModel):
-    """Gemma 2 Model Wrapper --> Supports text + image prompts"""
+    """Gemma 3 Model Wrapper --> Supports text + image prompts"""
 
     def __init__(self, model_name: str):
         super().__init__(model_name)
@@ -73,14 +84,14 @@ class GemmaModel(LanguageModel):
 
         self._device = next(self._model.parameters()).device
 
-    def generate_with_image(
+    def _generate_with_image(
         self,
         image_path: str,
         system_prompt: str,
         user_prompt: str,
-        max_new_tokens: int = 256,
-        temperature: float = 0.7,
-        top_p: float = 0.9,
+        max_new_tokens: int,
+        temperature: float,
+        top_p: float,
     ) -> GemmaModelResponse:
         """
         Generate a response from Gemma with both an image and text prompt.
@@ -91,8 +102,9 @@ class GemmaModel(LanguageModel):
             )
 
         # Load image
-        image = Image.open(image_path).convert("RGB")
+        image = Image.open("/storage/llm-moral-distractors/image_distractor_data/image_data/" + image_path).convert("RGB")
 
+        # Processor encodes both text + image
         messages = [
             {
                 "role": "user",
@@ -103,10 +115,7 @@ class GemmaModel(LanguageModel):
                 ]
             }
         ]
-
         prompt = self._processor.apply_chat_template(messages)
-
-        # Processor encodes both text + image
         inputs = self._processor(
             text=prompt,
             images=[image],
@@ -119,61 +128,84 @@ class GemmaModel(LanguageModel):
                 **inputs,
                 max_new_tokens=max_new_tokens,
                 do_sample=True,
+                temperature=temperature,
+                top_p=top_p,
                 pad_token_id=self._tokenizer.eos_token_id,
                 output_scores=True,
                 output_logits=True,
-                temperature=temperature,
-                top_p=top_p,
                 return_dict_in_generate=True
             )
 
         # Decode and clean
-        completion = self._processor.decode(output.sequences[0], skip_special_tokens=True)
-        answer_raw = completion
-        answer = answer_raw
+        answer_raw = self._processor.decode(output.sequences[0], skip_special_tokens=True)
+        answer = answer_raw[len(system_prompt) + len(user_prompt) - 1:].strip()
 
-        return GemmaModelResponse(get_timestamp(), answer, answer_raw, output, self._tokenizer)
+        return GemmaModelResponse(
+            timestamp=get_timestamp(),
+            answer_raw=answer_raw,
+            answer=answer,
+            output=output,
+            tokenizer=self._tokenizer
+        )
 
-    def get_top_p_answer(
+    def query(
         self,
-        distractor: Distractor | None,
-        prompt_base: str,
-        prompt_system: str,
-        question_type: str,
-        max_tokens: int,
-        temperature: float,
-        top_p: float,
+        user_prompt: str,
+        system_prompt: str,
+        max_tokens: int = 256,
+        temperature: float = 0.7,
+        top_p: float = 0.9,
+        distractor: Distractor | None = None
     ) -> GemmaModelResponse:
-        """Top-p decoding (optional image)"""
-        if distractor and distractor["modality"] == "img":
-            print("Image")
-            return self.generate_with_image(
-                image_path=distractor["img_path"],
-                system_prompt=prompt_system,
-                user_prompt=prompt_base,
-                max_new_tokens=max_tokens,
-            )
+        """
+        Query Gemma model (with top-p decoding)
+
+        :param system_prompt: the system prompt to query the model with
+        :param user_prompt: the user prompt to query the model with
+        :param max_tokens: the max output tokens
+        :param temperature: the temperature to generate outputs with
+        :param top_p: the probability to use for top_p decoding
+        :param distractor: the distractor to inject (optional)
+        :return: a GemmaModelResponse with the model output
+        """
+        if distractor is not None:
+            if distractor["modality"] == Modality.IMAGE:
+                return self._generate_with_image(
+                    image_path=distractor["image_path"],
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    max_new_tokens=max_tokens,
+                    temperature=temperature,
+                    top_p=top_p
+                )
+            else:
+                user_prompt = f"{distractor["text"]} {user_prompt}"
 
         # Text-only fallback
         inputs = self._tokenizer(
-            f"{prompt_system}{prompt_base}", return_tensors="pt"
+            f"{system_prompt} {user_prompt}",
+            return_tensors="pt"
         ).to(self._device)
 
-        print("Text")
         output = self._model.generate(
             **inputs,
             max_new_tokens=max_tokens,
             do_sample=True,
-            pad_token_id=self._tokenizer.eos_token_id,
-            return_dict_in_generate=True,
-            output_scores=True,
-            output_logits=True,
             temperature=temperature,
             top_p=top_p,
+            pad_token_id=self._tokenizer.eos_token_id,
+            output_scores=True,
+            output_logits=True,
+            return_dict_in_generate=True,
         )
 
-        completion = self._tokenizer.decode(output.sequences[0], skip_special_tokens=True)
-        answer_raw = completion
-        answer = completion[len(prompt_system) + len(prompt_base):].strip()
+        answer_raw = self._tokenizer.decode(output.sequences[0], skip_special_tokens=True)
+        answer = answer_raw[len(system_prompt) + len(user_prompt) - 1:].strip()
 
-        return GemmaModelResponse(get_timestamp(), answer, answer_raw, output, self._tokenizer)
+        return GemmaModelResponse(
+            timestamp=get_timestamp(),
+            answer_raw=answer_raw,
+            answer=answer,
+            output=output,
+            tokenizer=self._tokenizer
+        )

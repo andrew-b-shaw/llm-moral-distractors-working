@@ -20,8 +20,8 @@ gemma_model: GemmaModel = GemmaModel("google/gemma-3-4b-it")
 prompter = MoralChoicePrompter(
     model=gemma_model,
     max_tokens=10,
-    eval_temp=0.1,
-    eval_top_p=0.5
+    temperature=0.1,
+    top_p=0.5
 )
 
 result = prompter.prompt(scenario_series, "ab_moralchoice", distractor_series)
