@@ -31,7 +31,7 @@ parser.add_argument(
     "--dataset", default="high", type=str, help="Dataset to evaluate (moralchoice_high_ambiguity, moralchoice_law_ambiguity, reddit)"
 )
 parser.add_argument(
-    "--distractors", default=False, type=bool, help="Whether to use distractors"
+    "--distractors", default="none", type=str, help="Which distractors to use (all, text, image, none)"
 )
 parser.add_argument(
     "--model-name",
@@ -105,9 +105,12 @@ scenarios = pd.read_csv(f"data/scenarios/{args.dataset}.csv")
 scenarios = scenarios[:args.eval_num_scenarios] if args.eval_num_scenarios > 0 else scenarios
 # TODO: add support for reddit dataset
 
-if args.distractors:
-    distractors = pd.read_csv(f"data/distractors.csv")
-else:
+distractors = pd.read_csv(f"data/distractors.csv")
+if args.distractors == "text":
+    distractors = distractors[distractors['modality'] == "text"]
+elif args.distractors == "image":
+    distractors = distractors[distractors['modality'] == "image"]
+elif args.distractors == "none":
     distractors = None
 
 # Creates result folders

@@ -3,7 +3,7 @@ import torch
 import math
 from PIL import Image
 from huggingface_hub import login
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoProcessor, GemmaTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoProcessor, GemmaTokenizer, pipeline
 from transformers.generation.utils import GenerateDecoderOnlyOutput
 
 from src.config import PATH_HF_CACHE, PATH_OFFLOAD
@@ -105,18 +105,34 @@ class GemmaModel(LanguageModel):
         # Load image
         image = Image.open(image_path).convert("RGB")
 
+        # pipe = pipeline(
+        #     "image-text-to-text",
+        #     model=self._model.get_model_id(),
+        #     device=self._device,
+        #     torch_dtype=torch.bfloat16,
+        # )
+        # output = pipe(
+        #     image_path,
+        #     text=f"{system_prompt} <image_soft_token> {user_prompt}"
+        # )
+
         # Processor encodes both text + image
         messages = [
             {
+                "role": "system",
+                "content": [{"type": "text", "text": system_prompt}]
+            },
+            {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": system_prompt},
                     {"type": "image"},
                     {"type": "text", "text": user_prompt}
                 ]
             }
         ]
-        prompt = self._processor.apply_chat_template(messages)
+
+        # prompt = self._processor.apply_chat_template(messages)
+        prompt = f"{system_prompt} <start_of_image> {user_prompt}"
         inputs = self._processor(
             text=prompt,
             images=[image],

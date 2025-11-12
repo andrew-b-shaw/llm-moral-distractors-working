@@ -22,6 +22,10 @@ parser.add_argument(
 parser.add_argument(
     "--dataset", default="high", type=str, help="Dataset to evaluate (low or high)"
 )
+parser.add_argument(
+    "--distractors", default="all", type=str, help="Which distractors to collect (image, text, all)"
+)
+
 
 args = parser.parse_args()
 
@@ -29,20 +33,24 @@ args = parser.parse_args()
 ################################################################################################
 # SETUP
 ################################################################################################
-path_results = f"{PATH_CSV_RESULTS}/{args.experiment_name}/{args.dataset}"
+path_results = f"{PATH_CSV_RESULTS}/{args.experiment_name}/{args.dataset}/{args.distractors}"
 path_results_raw = f"{PATH_RESULTS}/{args.experiment_name}/{args.dataset}" + "_raw"
-print(path_results_raw)
-
 
 ################################################################################################
 # RESPONSE COLLECTION
 ################################################################################################
 # Collect all pickle result files
+if args.distractors == "image":
+    distractors = "img"
+elif args.distractors == "text":
+    distractors = "txt"
+else:
+    distractors = "all"
+
 results = []
-#print(path_results_raw)
 for path, subdirs, files in os.walk(path_results_raw):
     for name in files:
-        if name[-7:] == ".pickle":
+        if name[-7:] == ".pickle" and distractors in name:
             path_file = os.path.join(path, name)
 
             with open(path_file, "rb") as f:
