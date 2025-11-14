@@ -108,8 +108,6 @@ scenarios = scenarios[:args.eval_num_scenarios] if args.eval_num_scenarios > 0 e
 distractors = pd.read_csv(f"data/distractors.csv")
 if args.distractors == "text":
     distractors = distractors[distractors['modality'] == "text"]
-elif args.distractors == "image":
-    distractors = distractors[distractors['modality'] == "image"]
 elif args.distractors == "none":
     distractors = None
 
