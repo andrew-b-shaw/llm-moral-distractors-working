@@ -24,8 +24,24 @@ MODELS = dict(
         },
         "Qwen/Qwen2-VL-2B-Instruct": {
             "company": "AliBaba",
-            "model_class": "QwenModel",
+            "model_class": "QwenVLModel",
             "model_name": "Qwen/Qwen2-VL-2B-Instruct",
+            "8bit": False,
+            "likelihood_access": True,
+            "endpoint": None
+        },
+        "Qwen/Qwen3-1.7B": {
+            "company": "AliBaba",
+            "model_class": "QwenModel",
+            "model_name": "Qwen/Qwen3-1.7B",
+            "8bit": False,
+            "likelihood_access": True,
+            "endpoint": None
+        },
+        "Qwen/Qwen3-1.7B-Base": {
+            "company": "AliBaba",
+            "model_class": "QwenModel",
+            "model_name": "Qwen/Qwen3-1.7B-Base",
             "8bit": False,
             "likelihood_access": True,
             "endpoint": None
