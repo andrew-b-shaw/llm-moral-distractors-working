@@ -44,6 +44,8 @@ if args.distractors == "image":
     distractors = "img"
 elif args.distractors == "text":
     distractors = "txt"
+elif args.distractors == "none":
+    distractors = "no"
 else:
     distractors = "all"
 

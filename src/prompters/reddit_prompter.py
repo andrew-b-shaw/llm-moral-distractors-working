@@ -1,23 +1,32 @@
+import re
+
 import pandas as pd
 
 from data.templates.question_templates import QuestionTemplate, QUESTION_TEMPLATES
+from src.models.models import LanguageModelResponse
 from src.prompters.prompter import Prompter
-from src.prompters.prompt import Prompt, Scenario, Distractor
+from src.prompters.prompt import Prompt, Scenario, Distractor, Modality
 
 
 class RedditPrompter(Prompter[Prompt]):
+    _QUESTION_TYPE = "reddit"
+    _VALID_VERDICTS = ("YTA", "NTA", "ESH", "NAH", "INFO")
+    _VERDICT_REGEX = re.compile(r"(?i)\bVerdict\b\s*[:\-]\s*(YTA|NTA|ESH|NAH|INFO)\b")
+    _REASONING_REGEX = re.compile(r"(?is)\b(?:Reasoning|Reason|Explanation)\b\s*[:\-]\s*(.+)")
+
     def generate_prompt(
             self,
             scenario: Scenario,
-            question_type: str,
+            question_format: str,
             distractor: Distractor | None,
     ) -> Prompt:
-        question_template: QuestionTemplate = QUESTION_TEMPLATES[question_type]
+        question_template: QuestionTemplate = QUESTION_TEMPLATES[question_format]
         prompt: Prompt = {
             "scenario": scenario,
             "distractor": distractor,
             "system_prompt": question_template["system"],
-            "user_prompt": question_template["user"].format(scenario["context"])
+            "user_prompt": question_template["user"].format(scenario["context"]),
+            "question_format": question_format
         }
 
         return prompt
@@ -25,28 +34,28 @@ class RedditPrompter(Prompter[Prompt]):
     def pre_process(
             self,
             scenario_series: pd.Series,
-            question_type: str,
-            distractor_series: pd.Series | None,
-            distractor_modality: str | None
+            question_format: str,
+            distractor_series: pd.Series | None
     ) -> list[Prompt]:
         # Create Distractor
-        distractor: Distractor | None = {
-            "modality": distractor_modality,
-            "distractor_id": distractor_series["distractor_id"],
-            "text": distractor_series["text"] if distractor_modality == "text" else None,
-            "img": distractor_series["img_path"] if distractor_modality == "img" else None
-        } if distractor_series else None
+        distractor: Distractor | None = None
+        if distractor_series is not None:
+            distractor = {
+                "id": str(distractor_series.get("id", distractor_series.get("distractor_id", ""))),
+                "modality": Modality(distractor_series["modality"]),
+                "file_path": str(distractor_series["file_path"])
+            }
 
         # Create Scenario
         scenario: Scenario = {
-            "scenario_id": scenario_series["scenario_id"],
-            "context": scenario_series["selftext"]
+            "id": str(scenario_series.get("id", scenario_series.get("scenario_id", scenario_series.name))),
+            "context": scenario_series.get("selftext", scenario_series.get("context", ""))
         }
 
         # Generate prompt
         prompt = self.generate_prompt(
             scenario=scenario,
-            question_type=question_type,
+            question_format=question_format,
             distractor=distractor
         )
         return [prompt]
@@ -54,7 +63,68 @@ class RedditPrompter(Prompter[Prompt]):
     def post_process(
             self,
             prompt: Prompt,
-            response: dict[str, any]
+            response: LanguageModelResponse
     ) -> dict[str, any]:
-        # TODO: complete reddit post-processing
-        pass
+        distractor = prompt["distractor"]
+        response_text = self._get_response_text(response)
+        verdict, verdict_idx = self._extract_verdict(response_text)
+        reasoning = self._extract_reasoning(response_text, verdict_idx)
+
+        result = {
+            "scenario_id": prompt["scenario"]["id"],
+            "scenario_context": prompt["scenario"]["context"],
+            "distractor_id": distractor["id"] if distractor else None,
+            "distractor_modality": distractor["modality"].value if distractor else None,
+            "distractor_file_path": distractor["file_path"] if distractor else None,
+            "model_id": self.model.get_model_id(),
+            "question_format": prompt.get("question_format", self._QUESTION_TYPE),
+            "question_header": prompt["system_prompt"],
+            "question_text": prompt["user_prompt"],
+            "eval_technique": "top_p_sampling",
+            "eval_top_p": self.top_p,
+            "eval_temperature": self.temperature,
+            "eval_max_tokens": self.max_tokens,
+            "timestamp": response.timestamp,
+            "answer_raw": response.answer_raw,
+            "answer": response.answer,
+            "response_text": response_text,
+            "verdict": verdict,
+            "reasoning": reasoning
+        }
+        return result
+
+    def _get_response_text(self, response: LanguageModelResponse) -> str:
+        return (response.answer or response.answer_raw or "").strip()
+
+    def _extract_verdict(self, response_text: str) -> tuple[str | None, int | None]:
+        if not response_text:
+            return None, None
+
+        match = self._VERDICT_REGEX.search(response_text)
+        if match:
+            return match.group(1).upper(), match.end()
+
+        for label in self._VALID_VERDICTS:
+            fallback = re.search(rf"\b{label}\b", response_text, re.IGNORECASE)
+            if fallback:
+                return label, fallback.end()
+        return None, None
+
+    def _extract_reasoning(self, response_text: str, verdict_end: int | None) -> str | None:
+        if not response_text:
+            return None
+
+        match = self._REASONING_REGEX.search(response_text)
+        if match:
+            snippet = match.group(1).strip()
+            return self._strip_follow_up_headers(snippet)
+
+        if verdict_end is not None and verdict_end < len(response_text):
+            remainder = response_text[verdict_end:].strip()
+            if remainder:
+                return remainder
+        return None
+
+    def _strip_follow_up_headers(self, reasoning: str) -> str | None:
+        cleaned = re.split(r"\n\s*(?:Verdict|Reasoning|Reason|Explanation|Summary)\s*[:\-]", reasoning, maxsplit=1)[0].strip()
+        return cleaned or None
