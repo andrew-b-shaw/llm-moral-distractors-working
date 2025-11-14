@@ -22,6 +22,14 @@ MODELS = dict(
             "likelihood_access": False,
             "endpoint": "ChatCompletion",
         },
+        "Qwen/Qwen2-VL-2B-Instruct": {
+            "company": "AliBaba",
+            "model_class": "QwenModel",
+            "model_name": "Qwen/Qwen2-VL-2B-Instruct",
+            "8bit": False,
+            "likelihood_access": True,
+            "endpoint": None
+        },
         "meta-llama/Llama-3.2-1B-Instruct": {
             "company": "meta",
             "model_class": "LlamaModel",
