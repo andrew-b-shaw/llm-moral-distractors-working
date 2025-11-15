@@ -9,49 +9,10 @@ from transformers.generation.utils import GenerateDecoderOnlyOutput
 
 from src.config import PATH_HF_CACHE, PATH_OFFLOAD, PATH_DISTRACTORS
 from src.models.model_utils import get_timestamp, get_api_key
-from src.models.models import LanguageModel, MODELS, LanguageModelResponse
+from src.models.models import LanguageModel, MODELS
+from src.models.qwen_model import QwenModelResponse
 from src.prompters.prompt import Modality, Prompt, Position
 
-
-class QwenVLModelResponse(LanguageModelResponse):
-    _output: GenerateDecoderOnlyOutput
-    _tokenizer: AutoTokenizer
-
-    def __init__(
-        self,
-        timestamp: str,
-        answer_raw: str,
-        answer: str,
-        output: GenerateDecoderOnlyOutput,
-        tokenizer: AutoTokenizer
-    ):
-        super().__init__(
-            timestamp=timestamp,
-            answer_raw=answer_raw,
-            answer=answer
-        )
-        self._output = output
-        self._tokenizer = tokenizer
-
-    def get_answer_prob(self, answer: str) -> float:
-        """
-        Returns probability that the output **starts** with given string
-
-        :param answer: the string to calculate the probability of
-        :return: the probability that the output **starts** with the given string
-        """
-        token_ids = self._tokenizer(answer).input_ids
-        if len(token_ids) - 1 > len(self._output.logits):
-            return 0.0
-
-        answer_log_prob = 0.0
-        for i in range(len(token_ids) - 1):
-            token_id = token_ids[i + 1]
-            logits = self._output.logits[i]
-            token_probs = torch.softmax(logits, dim=1).squeeze()
-            answer_log_prob += math.log(token_probs[token_id].item())
-
-        return math.exp(answer_log_prob)
 
 class QwenVLModel(LanguageModel):
     """Qwen 3 Model Wrapper"""
@@ -88,7 +49,7 @@ class QwenVLModel(LanguageModel):
         max_tokens: int = 256,
         temperature: float = 0.7,
         top_p: float = 0.9
-    ) -> QwenVLModelResponse:
+    ) -> QwenModelResponse:
         image_inputs, video_inputs = None, None
         distractor = prompt["distractor"]
         messages = [
@@ -150,7 +111,7 @@ class QwenVLModel(LanguageModel):
         answer_raw = self._processor.decode(response.sequences[0], skip_special_tokens=True).strip()
         answer = answer_raw[len(prompt) - 1:]
 
-        return QwenVLModelResponse(
+        return QwenModelResponse(
             timestamp=get_timestamp(),
             answer_raw=answer_raw,
             answer=answer,

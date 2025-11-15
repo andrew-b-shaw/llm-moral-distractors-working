@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import os
 import torch
 import math
-from PIL import Image
 from huggingface_hub import login
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoProcessor, GemmaTokenizer, pipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizerFast
 from transformers.generation.utils import GenerateDecoderOnlyOutput
 
 from src.config import PATH_HF_CACHE, PATH_OFFLOAD
@@ -16,7 +14,7 @@ from src.prompters.prompt import Modality, Prompt
 
 class QwenModelResponse(LanguageModelResponse):
     _output: GenerateDecoderOnlyOutput
-    _tokenizer: AutoTokenizer
+    _tokenizer: PreTrainedTokenizerFast
 
     def __init__(
         self,
@@ -24,7 +22,7 @@ class QwenModelResponse(LanguageModelResponse):
         answer_raw: str,
         answer: str,
         output: GenerateDecoderOnlyOutput,
-        tokenizer: AutoTokenizer
+        tokenizer: PreTrainedTokenizerFast
     ):
         super().__init__(
             timestamp=timestamp,
@@ -41,14 +39,14 @@ class QwenModelResponse(LanguageModelResponse):
         :param answer: the string to calculate the probability of
         :return: the probability that the output **starts** with the given string
         """
-        token_ids = self._tokenizer(answer).input_ids
-        if len(token_ids) - 1 > len(self._output.logits):
+        token_ids = self._tokenizer.encode(answer)
+        if len(token_ids) > len(self._output.logits) - 1:
             return 0.0
 
         answer_log_prob = 0.0
-        for i in range(len(token_ids) - 1):
-            token_id = token_ids[i + 1]
-            logits = self._output.logits[i]
+        for i in range(len(token_ids)):
+            token_id = token_ids[i]
+            logits = self._output.logits[i]  # last token ID is EOS
             token_probs = torch.softmax(logits, dim=1).squeeze()
             answer_log_prob += math.log(token_probs[token_id].item())
 
@@ -82,7 +80,8 @@ class QwenModel(LanguageModel):
         prompt: Prompt,
         max_tokens: int = 256,
         temperature: float = 0.7,
-        top_p: float = 0.9
+        top_p: float = 0.9,
+        enable_thinking: bool = False
     ) -> QwenModelResponse:
         """
         Query Gemma model (with top-p decoding)
@@ -109,7 +108,7 @@ class QwenModel(LanguageModel):
             messages,
             tokenize=False,
             add_generation_prompt=True,
-            enable_thinking=True
+            enable_thinking=enable_thinking
         )
         inputs = self._tokenizer(
             text=[text_prompt],
@@ -130,7 +129,7 @@ class QwenModel(LanguageModel):
             )
 
         answer_raw = self._tokenizer.decode(output.sequences[0], skip_special_tokens=True)
-        answer = answer_raw[len(text_prompt) - 1:].strip()
+        answer = answer_raw[answer_raw.rfind("assistant") + len("assistant"):].strip()
 
         return QwenModelResponse(
             timestamp=get_timestamp(),

@@ -40,7 +40,7 @@ class LlamaModelResponse(LanguageModelResponse):
 
         answer_log_prob = 0.0
         for i in range(len(token_ids) - 1):
-            token_id = token_ids[i + 1]
+            token_id = token_ids[i + 1]  # first token ID is BOS
             logits = self._output.logits[i]
             token_probs = torch.softmax(logits, dim=1).squeeze()
             answer_log_prob += math.log(token_probs[token_id].item())
@@ -131,7 +131,7 @@ class LlamaModel(LanguageModel):
             )
 
         answer_raw = self._tokenizer.decode(output.sequences[0], skip_special_tokens=True)
-        answer = answer_raw[len(text_prompt) - 1:].strip()
+        answer = answer_raw[answer_raw.rfind("assistant") + len("assistant"):].strip()
 
         return LlamaModelResponse(
             timestamp=get_timestamp(),

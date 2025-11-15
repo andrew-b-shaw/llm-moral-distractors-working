@@ -40,14 +40,14 @@ class GemmaModelResponse(LanguageModelResponse):
         :param answer: the string to calculate the probability of
         :return: the probability that the output **starts** with the given string
         """
-        token_ids = self._tokenizer(answer).input_ids
-        if len(token_ids) - 1 > len(self._output.logits):
+        token_ids = self._tokenizer.encode(answer)
+        if len(token_ids) > len(self._output.logits):
             return 0.0
 
         answer_log_prob = 0.0
         for i in range(len(token_ids) - 1):
-            token_id = token_ids[i + 1]
-            logits = self._output.logits[i]
+            token_id = token_ids[i + 1]  # first token ID is BOS
+            logits = self._output.logits[i]  # last token ID is EOS
             token_probs = torch.softmax(logits, dim=1).squeeze()
             answer_log_prob += math.log(token_probs[token_id].item())
 
@@ -165,7 +165,8 @@ class GemmaModel(LanguageModel):
             )
 
         answer_raw = self._tokenizer.decode(output.sequences[0], skip_special_tokens=True)
-        answer = answer_raw[len(prompt) - 1:].strip()
+        answer = answer_raw[answer_raw.rfind("model") + len("model"):].strip()
+
         return GemmaModelResponse(
             timestamp=get_timestamp(),
             answer_raw=answer_raw,
