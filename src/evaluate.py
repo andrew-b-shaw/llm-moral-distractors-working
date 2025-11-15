@@ -123,7 +123,7 @@ DATASETS = {
         "prompter_class": "RedditPrompter",
         "scenario_loader": "reddit",
         "default_question_formats": ["reddit"],
-        "supports_distractors": False,
+        "supports_distractors": True,
         "hf_dataset_name": "ucberkeley-dlab/normative_evaluation_llms_everyday_dilemmas",
         "hf_dataset_file": "normative_evaluation_everyday_dilemmas_dataset.csv",
     },

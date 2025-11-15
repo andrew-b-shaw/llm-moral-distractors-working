@@ -189,6 +189,7 @@ class GemmaModel(LanguageModel):
         """
         if distractor is not None:
             if distractor["modality"] == Modality.IMAGE:
+                user_prompt = f"You see the scene in the image. {user_prompt}"
                 image_path = f"{os.path.abspath(os.getcwd())}/data/{distractor['file_path']}"
                 return self._generate_with_image(
                     image_path=image_path,
@@ -202,7 +203,7 @@ class GemmaModel(LanguageModel):
                 text_path = f"{os.path.abspath(os.getcwd())}/data/{distractor['file_path']}"
                 with open(text_path, 'r') as f:
                     distractor_text = f.read()
-                    user_prompt = f"{distractor_text} {user_prompt}"
+                    user_prompt = f"{distractor_text} Later, {user_prompt}"
 
         # Text-only fallback
         prompt = f"{system_prompt} {user_prompt}"
