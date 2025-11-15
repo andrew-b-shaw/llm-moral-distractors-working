@@ -31,10 +31,10 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
     ) -> MoralChoicePrompt:
         """
         Generate a prompt from the given information
-        :param scenario: the scenario to prompt with
         :param question_format: the format of the question ("ab", "compare", "free")
         :param question_ordering: the ordering of the options (0, 1)
-        :param distractor: the distractor to prompt with
+        :param scenario: the Scenario to prompt with
+        :param distractor: the Distractor to prompt with
         :return: a Prompt containing the given information
         """
 

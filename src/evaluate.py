@@ -314,7 +314,7 @@ def run_experiment(scenario_series: pd.Series, distractor_series: Optional[pd.Se
         result_path = (
                 path_model
                 / question_format
-                / f"s_{s_id}_d_{d_id}pickle"
+                / f"s_{s_id}_d_{d_id}.pickle"
         )
         with open(result_path, "wb") as f:
             pickle.dump(pd.DataFrame(results), f, protocol=0)

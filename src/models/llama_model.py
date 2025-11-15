@@ -9,9 +9,8 @@ from transformers.generation.utils import GenerateDecoderOnlyOutput
 from src.config import PATH_OFFLOAD, PATH_HF_CACHE
 from src.models.model_utils import get_timestamp, get_api_key
 from src.models.models import MODELS, LanguageModel, LanguageModelResponse
-from PIL import Image
 
-from src.prompters.prompt import Modality, Distractor
+from src.prompters.prompt import Modality, Prompt
 
 
 class LlamaModelResponse(LanguageModelResponse):
@@ -85,68 +84,59 @@ class LlamaModel(LanguageModel):
 
     def query(
         self,
-        user_prompt: str,
-        system_prompt: str,
+        prompt: Prompt,
         max_tokens: int = 256,
         temperature: float = 0.7,
-        top_p: float = 0.9,
-        distractor: Distractor | None = None
+        top_p: float = 0.9
     ) -> LlamaModelResponse:
-        # Greedy Search
-        text = f"{system_prompt}{user_prompt}"
-        if distractor["modality"] == Modality.IMAGE:
-            user_prompt = f"You see the scene in the image. {user_prompt}"
-            image_path = f"{os.path.abspath(os.getcwd())}/data/{distractor["file_path"]}"
-            messages = [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": system_prompt},
-                        {"type": "image"},
-                        {"type": "text", "text": user_prompt}
-                    ]
-                }
-            ]
-            prompt = self._processor.apply_chat_template(messages)
-            image = Image.open(image_path).convert("RGB")
-            inputs = self._processor(
-                text=prompt,
-                images=[image],
-                return_tensors="pt"
-            ).to(self._device)
-        else:
-            text_path = f"{os.path.abspath(os.getcwd())}/data/{distractor["file_path"]}"
-            with open(text_path, 'r') as f:
-                distractor_text = f.read()
-                user_prompt = f"{distractor_text} Later, {user_prompt}"
-            inputs = self._processor(
-                text=f"{system_prompt} {user_prompt}",
-                return_tensors="pt"
-            ).to(self._device)
+        """
+        Query Llama model (with top-p decoding)
+
+        :param prompt: the Prompt to query the model with
+        :param max_tokens: the max output tokens
+        :param temperature: the temperature to generate outputs with
+        :param top_p: the probability to use for top_p decoding
+        :return: a LlamaModelResponse with the model output
+        """
+        distractor = prompt["distractor"]
+        if distractor is not None:
+            if distractor["modality"] == Modality.IMAGE:
+                raise ValueError("This model does not support image inputs!")
+
+        messages = [
+            {"role": "system", "content": prompt["system_prompt"]},
+            {"role": "user", "content": prompt["user_prompt"]}
+        ]
+        text_prompt = self._tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+        inputs = self._tokenizer(
+            text=[text_prompt],
+            return_tensors="pt"
+        ).to(self._device)
 
         with torch.no_grad():
-            response = self._model.generate(
+            output = self._model.generate(
                 **inputs,
                 max_new_tokens=max_tokens,
-                length_penalty=0,
                 do_sample=True,
-                top_p=top_p,
                 temperature=temperature,
+                top_p=top_p,
+                pad_token_id=self._tokenizer.eos_token_id,
                 output_scores=True,
                 output_logits=True,
                 return_dict_in_generate=True,
             )
 
-        # Parse Output
-        answer_raw = self._processor.decode(
-            response.sequences[0], skip_special_tokens=True
-        ).strip()
-        answer = answer_raw[len(system_prompt) + len(user_prompt) - 1:]
+        answer_raw = self._tokenizer.decode(output.sequences[0], skip_special_tokens=True)
+        answer = answer_raw[len(text_prompt) - 1:].strip()
 
         return LlamaModelResponse(
             timestamp=get_timestamp(),
             answer_raw=answer_raw,
             answer=answer,
-            output=response,
+            output=output,
             tokenizer=self._tokenizer
         )

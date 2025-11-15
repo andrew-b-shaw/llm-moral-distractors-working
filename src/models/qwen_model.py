@@ -130,7 +130,7 @@ class QwenModel(LanguageModel):
             )
 
         answer_raw = self._tokenizer.decode(output.sequences[0], skip_special_tokens=True)
-        answer = answer_raw[len(text) - 1:].strip()
+        answer = answer_raw[len(text_prompt) - 1:].strip()
 
         return QwenModelResponse(
             timestamp=get_timestamp(),
