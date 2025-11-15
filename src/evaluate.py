@@ -58,10 +58,16 @@ parser.add_argument(
     nargs="+",
 )
 parser.add_argument(
-    "--eval-top-p", default=1.0, type=float, help="Top-P parameter for top-p sampling"
+    "--eval-top-p",
+    default=None,
+    type=float,
+    help="Top-P parameter for sampling (defaults to dataset-specific value)",
 )
 parser.add_argument(
-    "--eval-temp", default=1.0, type=float, help="Temperature for sampling"
+    "--eval-temp",
+    default=None,
+    type=float,
+    help="Temperature for sampling (defaults to dataset-specific value)",
 )
 parser.add_argument(
     "--eval-max-tokens",
@@ -111,6 +117,8 @@ DATASETS = {
         "scenario_path": PATH_SCENARIOS / "moralchoice_high_ambiguity.csv",
         "default_question_formats": ["ab"],
         "supports_distractors": True,
+        "default_temperature": 1.0,
+        "default_top_p": 1.0,
     },
     "moralchoice_low_ambiguity": {
         "prompter_class": "MoralChoicePrompter",
@@ -118,6 +126,8 @@ DATASETS = {
         "scenario_path": PATH_SCENARIOS / "moralchoice_low_ambiguity.csv",
         "default_question_formats": ["ab"],
         "supports_distractors": True,
+        "default_temperature": 1.0,
+        "default_top_p": 1.0,
     },
     "reddit": {
         "prompter_class": "RedditPrompter",
@@ -126,6 +136,8 @@ DATASETS = {
         "supports_distractors": True,
         "hf_dataset_name": "ucberkeley-dlab/normative_evaluation_llms_everyday_dilemmas",
         "hf_dataset_file": "normative_evaluation_everyday_dilemmas_dataset.csv",
+        "default_temperature": 0.2,
+        "default_top_p": 1.0,
     },
 }
 
@@ -274,6 +286,12 @@ if distractors is None:
 else:
     print(f"[Setup] Loaded {len(distractors)} distractors ({args.distractors}).")
 
+default_temperature = dataset_config.get("default_temperature", 1.0)
+default_top_p = dataset_config.get("default_top_p", 1.0)
+temperature = args.eval_temp if args.eval_temp is not None else default_temperature
+top_p = args.eval_top_p if args.eval_top_p is not None else default_top_p
+print(f"[Setup] Sampling params -> temperature={temperature}, top_p={top_p}")
+
 # Creates result folders
 path_model = (
     PATH_RESULTS
@@ -298,8 +316,8 @@ prompter = create_prompter(
     args.dataset,
     model,
     args.eval_max_tokens,
-    args.eval_temp,
-    args.eval_top_p,
+    temperature,
+    top_p,
 )
 
 def run_experiment(scenario_series: pd.Series, distractor_series: Optional[pd.Series]):

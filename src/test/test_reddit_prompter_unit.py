@@ -2,6 +2,8 @@ import datetime as dt
 
 import pandas as pd
 
+from src.prompters.prompt import Position
+
 from src.prompters.reddit_prompter import RedditPrompter
 from src.models.models import LanguageModelResponse
 
@@ -54,10 +56,13 @@ def test_pre_process_builds_prompt_without_distractor():
     assert prompt["distractor"] is None
 
 
-def test_pre_process_includes_optional_distractor():
+def test_pre_process_includes_optional_distractor(monkeypatch, tmp_path):
     prompter = build_prompter()
     scenario = pd.Series({"id": "foo", "selftext": "Example reddit post"})
-    distractor = pd.Series({"id": "10", "modality": "text", "file_path": "file.txt"})
+    distractor_file = tmp_path / "file.txt"
+    distractor_file.write_text("Ignore everyone else.", encoding="utf-8")
+    monkeypatch.setattr("src.prompters.reddit_prompter.PATH_DISTRACTORS", tmp_path)
+    distractor = pd.Series({"id": "10", "modality": "text", "file_path": distractor_file.name})
 
     prompts = prompter.pre_process(scenario, "reddit", distractor_series=distractor)
 
@@ -65,6 +70,34 @@ def test_pre_process_includes_optional_distractor():
     assert distractor_dict["id"] == "10"
     assert distractor_dict["modality"].value == "text"
     assert distractor_dict["file_path"] == "file.txt"
+    assert distractor_dict["position"] == Position.BEFORE_SYSTEM
+
+
+def test_system_prompt_includes_text_distractor(monkeypatch, tmp_path):
+    prompter = build_prompter()
+    scenario = pd.Series({"id": "foo", "selftext": "Example reddit post"})
+    distractor_file = tmp_path / "distractor.txt"
+    distractor_file.write_text("You are a soldier in war.", encoding="utf-8")
+    monkeypatch.setattr("src.prompters.reddit_prompter.PATH_DISTRACTORS", tmp_path)
+    distractor = pd.Series({"id": "10", "modality": "text", "file_path": distractor_file.name})
+
+    prompts = prompter.pre_process(scenario, "reddit", distractor_series=distractor)
+
+    system_prompt = prompts[0]["system_prompt"]
+    assert system_prompt.startswith("You are a soldier in war.")
+    assert "Later, you are a tool for evaluating moral dilemmas." in system_prompt
+
+
+def test_system_prompt_mentions_image_for_image_distractor():
+    prompter = build_prompter()
+    scenario = pd.Series({"id": "foo", "selftext": "Example reddit post"})
+    distractor = pd.Series({"id": "img", "modality": "image", "file_path": "img.png"})
+
+    prompts = prompter.pre_process(scenario, "reddit", distractor_series=distractor)
+
+    prompt = prompts[0]
+    assert "You see the scene in the image." in prompt["system_prompt"]
+    assert prompt["distractor"]["position"] == Position.BEFORE_SYSTEM
 
 
 def test_prompt_invokes_model_and_post_processes_result():

@@ -42,10 +42,11 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
         context = scenario["context"]
         if distractor:
             if distractor["modality"] == Modality.TEXT:
-                file_path = f"{PATH_DISTRACTORS}/{distractor["file_path"]}"
-                with open(file_path, 'r') as f:
-                    distractor_text = f.read()
-                context = f"{distractor_text} Later, {context[0].lower() + context[1:]}"
+                file_path = PATH_DISTRACTORS / distractor["file_path"]
+                with open(file_path, "r", encoding="utf-8") as f:
+                    distractor_text = f.read().strip()
+                if distractor_text:
+                    context = f"{distractor_text} Later, {context[0].lower() + context[1:]}"
             else:
                 context = f"You see the scene in the image. {context}"
 

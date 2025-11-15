@@ -5,9 +5,10 @@ import re
 import pandas as pd
 
 from data.templates.question_templates import QuestionTemplate, QUESTION_TEMPLATES
+from src.config import PATH_DISTRACTORS
 from src.models.models import LanguageModelResponse
 from src.prompters.prompter import Prompter
-from src.prompters.prompt import Prompt, Scenario, Distractor, Modality
+from src.prompters.prompt import Prompt, Scenario, Distractor, Modality, Position
 
 
 class RedditPrompter(Prompter[Prompt]):
@@ -17,17 +18,19 @@ class RedditPrompter(Prompter[Prompt]):
     _REASONING_REGEX = re.compile(r"(?is)\b(?:Reasoning|Reason|Explanation)\b\s*[:\-]\s*(.+)")
 
     def generate_prompt(
-            self,
-            scenario: Scenario,
-            question_format: str,
-            distractor: Distractor | None,
+        self,
+        scenario: Scenario,
+        question_format: str,
+        distractor: Distractor | None,
     ) -> Prompt:
         question_template: QuestionTemplate = QUESTION_TEMPLATES[question_format]
+        system_prompt = self._build_system_prompt(question_template["system"], distractor)
+        user_prompt = question_template["user"].format(scenario["context"].strip())
         prompt: Prompt = {
             "scenario": scenario,
             "distractor": distractor,
-            "system_prompt": question_template["system"],
-            "user_prompt": question_template["user"].format(scenario["context"]),
+            "system_prompt": system_prompt,
+            "user_prompt": user_prompt,
             "question_format": question_format
         }
 
@@ -42,10 +45,13 @@ class RedditPrompter(Prompter[Prompt]):
         # Create Distractor
         distractor: Distractor | None = None
         if distractor_series is not None:
+            modality = Modality(distractor_series["modality"])
+            position = Position.BEFORE_SYSTEM
             distractor = {
                 "id": str(distractor_series.get("id", distractor_series.get("distractor_id", ""))),
-                "modality": Modality(distractor_series["modality"]),
-                "file_path": str(distractor_series["file_path"])
+                "modality": modality,
+                "file_path": str(distractor_series["file_path"]),
+                "position": position
             }
 
         # Create Scenario
@@ -61,6 +67,47 @@ class RedditPrompter(Prompter[Prompt]):
             distractor=distractor
         )
         return [prompt]
+
+    def _build_system_prompt(
+        self,
+        base_prompt: str,
+        distractor: Distractor | None
+    ) -> str:
+        normalized_prompt = base_prompt.strip()
+        if not distractor:
+            return normalized_prompt
+
+        if distractor["modality"] == Modality.TEXT:
+            return self._prepend_text_distractor(normalized_prompt, distractor)
+
+        if distractor["modality"] == Modality.IMAGE:
+            return self._prepend_image_instruction(normalized_prompt)
+
+        return normalized_prompt
+
+    def _prepend_text_distractor(self, base_prompt: str, distractor: Distractor) -> str:
+        distractor_path = PATH_DISTRACTORS / distractor["file_path"]
+        with open(distractor_path, "r", encoding="utf-8") as f:
+            distractor_text = f.read().strip()
+
+        if not distractor_text:
+            return base_prompt
+
+        remainder = self._lowercase_first(base_prompt)
+        return f"{distractor_text} Later, {remainder}" if remainder else distractor_text
+
+    def _prepend_image_instruction(self, base_prompt: str) -> str:
+        remainder = self._lowercase_first(base_prompt)
+        if remainder:
+            return f"You see the scene in the image. {remainder}"
+        return "You see the scene in the image."
+
+    @staticmethod
+    def _lowercase_first(text: str) -> str:
+        for idx, char in enumerate(text):
+            if char.isalpha():
+                return text[:idx] + char.lower() + text[idx + 1:]
+        return text
 
     def post_process(
             self,
