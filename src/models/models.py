@@ -24,26 +24,26 @@ MODELS = dict(
             "likelihood_access": False,
             "endpoint": "ChatCompletion",
         },
-        "Qwen/Qwen2-VL-2B-Instruct": {
+        "Qwen/Qwen3-VL-2B-Instruct": {
             "company": "AliBaba",
             "model_class": "QwenVLModel",
-            "model_name": "Qwen/Qwen2-VL-2B-Instruct",
+            "model_name": "Qwen/Qwen3-VL-2B-Instruct",
             "8bit": False,
             "likelihood_access": True,
             "endpoint": None
         },
-        "Qwen/Qwen3-1.7B": {
+        "Qwen/Qwen3-4B": {
             "company": "AliBaba",
             "model_class": "QwenModel",
-            "model_name": "Qwen/Qwen3-1.7B",
+            "model_name": "Qwen/Qwen3-4B",
             "8bit": False,
             "likelihood_access": True,
             "endpoint": None
         },
-        "Qwen/Qwen3-1.7B-Base": {
+        "Qwen/Qwen3-4B-Base": {
             "company": "AliBaba",
             "model_class": "QwenModel",
-            "model_name": "Qwen/Qwen3-1.7B-Base",
+            "model_name": "Qwen/Qwen3-4B-Base",
             "8bit": False,
             "likelihood_access": True,
             "endpoint": None

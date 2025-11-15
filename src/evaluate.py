@@ -132,7 +132,6 @@ DATASETS = {
 MoralChoicePrompter = MoralChoicePrompter
 RedditPrompter = RedditPrompter
 
-
 def create_prompter(dataset_name, model, max_tokens, temperature, top_p):
     """Init Models from model_name only"""
     if dataset_name in DATASETS:
@@ -231,13 +230,11 @@ def load_distractors(setting: str) -> Optional[pd.DataFrame]:
         return None
     return distractors
 
-
 def _safe_identifier(value: str) -> str:
     return "".join(
         c if c.isalnum() or c in {"-", "_"} else "_"
         for c in str(value)
     )
-
 
 
 ################################################################################################

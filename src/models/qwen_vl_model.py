@@ -3,11 +3,11 @@ import torch
 import math
 
 from huggingface_hub import login
-from transformers import Qwen2VLForConditionalGeneration, AutoTokenizer, AutoProcessor
+from transformers import AutoModelForImageTextToText, AutoTokenizer, AutoProcessor
 from qwen_vl_utils import process_vision_info
 from transformers.generation.utils import GenerateDecoderOnlyOutput
 
-from src.config import PATH_HF_CACHE, PATH_OFFLOAD
+from src.config import PATH_HF_CACHE, PATH_OFFLOAD, PATH_DISTRACTORS
 from src.models.model_utils import get_timestamp, get_api_key
 from src.models.models import LanguageModel, MODELS, LanguageModelResponse
 from src.prompters.prompt import Distractor, Modality
@@ -58,17 +58,16 @@ class QwenVLModel(LanguageModel):
 
     def __init__(self, model_name: str):
         super().__init__(model_name)
-        assert MODELS[model_name]["model_class"] == "QwenModel", (
+        assert MODELS[model_name]["model_class"] == "QwenVLModel", (
             f"Erroneous Model Instantiation for {model_name}"
         )
-
 
         login(token=get_api_key("huggingface"))
         if MODELS[model_name]["8bit"]:
             raise ValueError(f"Unknown Model '{model_name}'")
         else:
-            self._model = Qwen2VLForConditionalGeneration.from_pretrained(
-                pretrained_model_name_or_path="Qwen/Qwen2-VL-2B-Instruct",
+            self._model = AutoModelForImageTextToText.from_pretrained(
+                pretrained_model_name_or_path=model_name,
                 torch_dtype="auto",
                 device_map="auto",
                 cache_dir=PATH_HF_CACHE,
@@ -91,53 +90,73 @@ class QwenVLModel(LanguageModel):
         temperature: float = 0.7,
         top_p: float = 0.9,
         distractor: Distractor | None = None
-    ) -> QwenModelResponse:
-        if distractor["modality"] == Modality.IMAGE:
+    ) -> QwenVLModelResponse:
+        image_inputs, video_inputs = None, None
+        if distractor:
+            if distractor["modality"] == Modality.IMAGE:
+                image_path = f"{PATH_DISTRACTORS}/{distractor["file_path"]}"
+                messages = [
+                    {
+                        "role": "system",
+                        "content": [
+                            {"type": "text", "text": system_prompt}
+                        ]
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image", "image": image_path},
+                            {"type": "text", "text": user_prompt}
+                        ]
+                    }
+                ]
+                image_inputs, video_inputs = process_vision_info(messages)
+            else:
+                text_path = f"{os.path.abspath(os.getcwd())}/data/{distractor["file_path"]}"
+                with open(text_path, 'r') as f:
+                    distractor_text = f.read()
+                messages = [
+                    {
+                        "role": "system",
+                        "content": [
+                            {"type": "text", "text": system_prompt}
+                        ]
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": f"{distractor_text} {user_prompt}"}
+                        ]
+                    }
+                ]
+        else:
             messages = [
                 {
                     "role": "system",
                     "content": [
-                        {
-                            "type": "text",
-                            "image": system_prompt
-                        }
+                        {"type": "text", "text": system_prompt}
                     ]
                 },
                 {
                     "role": "user",
                     "content": [
-                        {
-                            "type": "image",
-                            "image": f"{distractor["file_path"]}"
-                        },
-                        {
-                            "type": "text",
-                            "text": user_prompt
-                        }
+                        {"type": "text", "text": user_prompt}
                     ]
                 }
             ]
 
-            prompt = self._processor.apply_chat_template(
-                messages, tokenize=False, add_generation_prompt=True
-            )
-            image_inputs, video_inputs = process_vision_info(messages)
-            inputs = self._processor(
-                text=[prompt],
-                images=image_inputs,
-                videos=video_inputs,
-                padding=True,
-                return_tensors="pt",
-            ).to(self._device)
-        else:
-            text_path = f"{os.path.abspath(os.getcwd())}/data/{distractor["file_path"]}"
-            with open(text_path, 'r') as f:
-                distractor_text = f.read()
-                prompt = f"{system_prompt} {distractor_text} {user_prompt}"
-            inputs = self._processor(
-                text=prompt,
-                return_tensors="pt"
-            ).to(self._device)
+        prompt = self._processor.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True
+        )
+        inputs = self._processor(
+            text=[prompt],
+            images=image_inputs,
+            videos=video_inputs,
+            padding=True,
+            return_tensors="pt",
+        ).to(self._device)
 
         with torch.no_grad():
             response = self._model.generate(
@@ -158,7 +177,7 @@ class QwenVLModel(LanguageModel):
         ).strip()
         answer = answer_raw[len(prompt) - 1:]
 
-        return QwenModelResponse(
+        return QwenVLModelResponse(
             timestamp=get_timestamp(),
             answer_raw=answer_raw,
             answer=answer,
