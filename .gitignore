@@ -6,5 +6,8 @@ cache/
 python
 data/responses/
 __pycache__/
-*.pyc
 data/csv_results/
+venv/
+*.pyc
+.idea/
+src/andrew_test/

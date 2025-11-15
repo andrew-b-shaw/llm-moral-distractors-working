@@ -88,9 +88,7 @@ class Prompter(Generic[AnyPrompt]):
         responses = []
         for prompt in prompts:
             response = self.model.query(
-                distractor=prompt["distractor"],
-                user_prompt=prompt["user_prompt"],
-                system_prompt=prompt["system_prompt"],
+                prompt=prompt,
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
                 top_p=self.top_p

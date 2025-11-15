@@ -230,10 +230,14 @@ def load_distractors(setting: str) -> Optional[pd.DataFrame]:
         return None
     return distractors
 
-def _safe_identifier(value: str) -> str:
+def _safe_identifier(series: Optional[pd.Series]) -> str:
+    if series is None:
+        return "none"
+
+    id = series["id"]
     return "".join(
         c if c.isalnum() or c in {"-", "_"} else "_"
-        for c in str(value)
+        for c in str(id)
     )
 
 
@@ -248,8 +252,8 @@ question_formats = args.question_formats or dataset_config.get(
 if not question_formats:
     raise ValueError(f"No question formats provided for dataset '{args.dataset}'.")
 
+# Load scenarios and distractors
 scenarios = load_scenarios(args.dataset, args.eval_num_scenarios)
-
 supports_distractors = dataset_config.get("supports_distractors", True)
 if supports_distractors:
     distractors = load_distractors(args.distractors)
@@ -287,6 +291,8 @@ for question_format in question_formats:
 ################################################################################################
 gc.collect()
 torch.cuda.empty_cache()
+
+# Create model and prompter
 model = create_model(args.model_name)
 prompter = create_prompter(
     args.dataset,
@@ -296,33 +302,35 @@ prompter = create_prompter(
     args.eval_top_p,
 )
 
-if distractors is None:
-    for i_s, scenario in tqdm(
-        scenarios.iterrows(),
-        total=len(scenarios),
-        position=0,
-        ncols=100,
-        leave=True,
-        desc=f"No Moral Distractors Eval: {model.get_model_id()}",
-    ):
-        for question_format in question_formats:
-            # No distractor condition
-            results = prompter.prompt(
-                question_format=question_format,
-                scenario_series=scenario,
-                distractor_series=None,
-            )
-
-            scenario_id = _safe_identifier(scenario["id"])
-            result_path = (
+def run_experiment(scenario_series: pd.Series, distractor_series: Optional[pd.Series]):
+    for question_format in question_formats:
+        results = prompter.prompt(
+            question_format=question_format,
+            scenario_series=scenario_series,
+            distractor_series=distractor_series,
+        )
+        s_id = _safe_identifier(scenario_series)
+        d_id = _safe_identifier(distractor_series)
+        result_path = (
                 path_model
                 / question_format
-                / f"scenario_{scenario_id}_no_distractor.pickle"
-            )
-            with open(result_path, "wb") as f:
-                pickle.dump(pd.DataFrame(results), f, protocol=0)
-else:
-    for (i_s, scenario), (i_d, distractor) in tqdm(
+                / f"s_{s_id}_d_{d_id}pickle"
+        )
+        with open(result_path, "wb") as f:
+            pickle.dump(pd.DataFrame(results), f, protocol=0)
+
+for i_s, scenario_series in tqdm(
+    scenarios.iterrows(),
+    total=len(scenarios),
+    position=0,
+    ncols=100,
+    leave=True,
+    desc=f"Moral Distractors Eval: {model.get_model_id()}",
+):
+    run_experiment(scenario_series, None)
+
+if distractors is not None:
+    for (i_s, scenario_series), (i_d, distractor_series) in tqdm(
         itertools.product(scenarios.iterrows(), distractors.iterrows()),
         total=len(scenarios) * len(distractors),
         position=0,
@@ -330,19 +338,4 @@ else:
         leave=True,
         desc=f"Moral Distractors Eval: {model.get_model_id()}",
     ):
-        for question_format in question_formats:
-            results = prompter.prompt(
-                question_format=question_format,
-                scenario_series=scenario,
-                distractor_series=distractor,
-            )
-
-            scenario_id = _safe_identifier(scenario["id"])
-            distractor_id = _safe_identifier(distractor["id"])
-            result_path = (
-                path_model
-                / question_format
-                / f"scenario_{scenario_id}_distractor_{distractor_id}.pickle"
-            )
-            with open(result_path, "wb") as f:
-                pickle.dump(pd.DataFrame(results), f, protocol=0)
+        run_experiment(scenario_series, distractor_series)

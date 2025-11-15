@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-import os
-import re
-import sys
-import time
-import math
 from abc import abstractmethod
 
-from src.prompters.prompt import Distractor
+from src.prompters.prompt import Distractor, Prompt
 
 API_TIMEOUTS = [1, 2, 4, 8, 16, 32]
 
@@ -178,12 +173,10 @@ class LanguageModel:
     @abstractmethod
     def query(
         self,
-        user_prompt: str,
-        system_prompt: str,
-        max_tokens: int = 256,
+        prompt: Prompt,
+        max_new_tokens: int = 256,
         temperature: float = 0.7,
         top_p: float = 0.9,
-        distractor: Distractor | None = None
     ) -> LanguageModelResponse:
         """
         Gets answer using sampling (based on top_p and temperature)
@@ -191,7 +184,7 @@ class LanguageModel:
         :param distractor:      the distractor to inject
         :param user_prompt:     base prompt
         :param prompt_sytem:    system instruction for chat endpoint of OpenAI
-        :param max_tokens       max tokens in answer
+        :param max_new_tokens       max tokens in answer
         :param temperature      temperature for top_p sampling
         :param top_p            top_p parameter
         :return:                answer string

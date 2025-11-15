@@ -9,7 +9,7 @@ import requests
 from src.config import PATH_DISTRACTORS
 from src.models.model_utils import get_timestamp
 from src.models.models import MODELS, LanguageModel, LanguageModelResponse
-from src.prompters.prompt import Modality, Distractor
+from src.prompters.prompt import Modality, Distractor, Prompt
 
 
 class OllamaModelResponse(LanguageModelResponse):
@@ -44,11 +44,7 @@ class OllamaModel(LanguageModel):
         if distractor["modality"] == Modality.IMAGE:
             raise ValueError("Ollama text endpoint does not support image distractors.")
 
-        distractor_path = Path(os.path.abspath(os.getcwd())) / "data" / distractor["file_path"]
-        if not distractor_path.exists():
-            # fall back to PATH_DISTRACTORS root as a secondary location
-            fallback = PATH_DISTRACTORS / distractor["file_path"]
-            distractor_path = fallback
+        distractor_path = PATH_DISTRACTORS / distractor["file_path"]
         with distractor_path.open("r") as f:
             distractor_text = f.read().strip()
         if not distractor_text:
@@ -64,19 +60,17 @@ class OllamaModel(LanguageModel):
 
     def query(
         self,
-        user_prompt: str,
-        system_prompt: str,
+        prompt: Prompt,
         max_tokens: int = 256,
         temperature: float = 0.7,
-        top_p: float = 0.9,
-        distractor: Distractor | None = None
+        top_p: float = 0.9
     ) -> OllamaModelResponse:
-        user_prompt = self._apply_distractor(user_prompt, distractor)
-        prompt = self._build_prompt(system_prompt, user_prompt)
+        user_prompt = self._apply_distractor(prompt["user_prompt"], prompt["distractor"])
+        text_prompt = self._build_prompt(prompt["system_prompt"], prompt["user_prompt"])
 
         payload: dict[str, Any] = {
             "model": self._ollama_model,
-            "prompt": prompt,
+            "prompt": text_prompt,
             "stream": False,
             "options": {
                 "temperature": temperature,

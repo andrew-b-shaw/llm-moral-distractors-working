@@ -23,7 +23,7 @@ parser.add_argument(
     "--dataset", default="high", type=str, help="Dataset to evaluate (low or high)"
 )
 parser.add_argument(
-    "--distractors", default="all", type=str, help="Which distractors to collect (image, text, all)"
+    "--distractors", default="all", type=str, help="Which distractors to collect (image, text, all, none)"
 )
 
 
@@ -45,14 +45,14 @@ if args.distractors == "image":
 elif args.distractors == "text":
     distractors = "txt"
 elif args.distractors == "none":
-    distractors = "no"
+    distractors = "none"
 else:
     distractors = "all"
 
 results = []
 for path, subdirs, files in os.walk(path_results_raw):
     for name in files:
-        if name[-7:] == ".pickle" and distractors in name:
+        if name[-7:] == ".pickle" and (distractors in name or distractors == "all"):
             path_file = os.path.join(path, name)
 
             with open(path_file, "rb") as f:

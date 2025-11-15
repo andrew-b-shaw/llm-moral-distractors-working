@@ -18,24 +18,6 @@ def get_api_key(company_identifier: str) -> str:
     raise ValueError(f"API KEY not available at: {path_key}")
 
 
-def get_raw_likelihoods_from_answer(
-        token_likelihoods: dict[str, float], start: int = 0, end: int = None
-) -> list[float]:
-    """
-    Helper Function to filter token_likelihood
-    """
-    if token_likelihoods[start][0] in [":", "\s", ""]:
-        start += 1
-
-    likelihoods = [
-        likelihood
-        for (token, likelihood) in token_likelihoods[start:end]
-        if token not in ["<BOS_TOKEN>", "</s>"]
-    ]
-
-    return likelihoods
-
-
 def get_timestamp() -> str:
     """
     Generate timestamp of format Y-M-D_H:M:S

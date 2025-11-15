@@ -11,7 +11,7 @@ from transformers.generation.utils import GenerateDecoderOnlyOutput
 from src.config import PATH_HF_CACHE, PATH_OFFLOAD
 from src.models.model_utils import get_timestamp, get_api_key
 from src.models.models import LanguageModel, MODELS, LanguageModelResponse
-from src.prompters.prompt import Distractor, Modality
+from src.prompters.prompt import Modality, Prompt
 
 
 class QwenModelResponse(LanguageModelResponse):
@@ -73,18 +73,16 @@ class QwenModel(LanguageModel):
             offload_folder=PATH_OFFLOAD,
             dtype=torch.bfloat16,
         )
+        self._device = next(self._model.parameters()).device
 
         self._tokenizer = AutoTokenizer.from_pretrained(self._model_name, cache_dir=PATH_HF_CACHE)
-        self._device = next(self._model.parameters()).device
 
     def query(
         self,
-        user_prompt: str,
-        system_prompt: str,
+        prompt: Prompt,
         max_tokens: int = 256,
         temperature: float = 0.7,
-        top_p: float = 0.9,
-        distractor: Distractor | None = None
+        top_p: float = 0.9
     ) -> QwenModelResponse:
         """
         Query Gemma model (with top-p decoding)
@@ -97,33 +95,24 @@ class QwenModel(LanguageModel):
         :param distractor: the distractor to inject (optional)
         :return: a GemmaModelResponse with the model output
         """
+
+        distractor = prompt["distractor"]
         if distractor is not None:
             if distractor["modality"] == Modality.IMAGE:
-                raise Exception("This model does not support image inputs!")
-
-            text_path = f"{os.path.abspath(os.getcwd())}/data/{distractor['file_path']}"
-            with open(text_path, 'r') as f:
-                distractor_text = f.read()
-                user_prompt = f"{distractor_text} Later, {user_prompt}"
+                raise ValueError("This model does not support image inputs!")
 
         messages = [
-            {
-                "role": "system",
-                "content": system_prompt
-            },
-            {
-                "role": "user",
-                "content": user_prompt
-            }
+            {"role": "system", "content": prompt["system_prompt"]},
+            {"role": "user", "content": prompt["user_prompt"]}
         ]
-        text = self._tokenizer.apply_chat_template(
+        text_prompt = self._tokenizer.apply_chat_template(
             messages,
             tokenize=False,
             add_generation_prompt=True,
             enable_thinking=True
         )
         inputs = self._tokenizer(
-            [text],
+            text=[text_prompt],
             return_tensors="pt"
         ).to(self._device)
 

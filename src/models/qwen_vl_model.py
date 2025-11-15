@@ -10,7 +10,7 @@ from transformers.generation.utils import GenerateDecoderOnlyOutput
 from src.config import PATH_HF_CACHE, PATH_OFFLOAD, PATH_DISTRACTORS
 from src.models.model_utils import get_timestamp, get_api_key
 from src.models.models import LanguageModel, MODELS, LanguageModelResponse
-from src.prompters.prompt import Distractor, Modality
+from src.prompters.prompt import Modality, Prompt, Position
 
 
 class QwenVLModelResponse(LanguageModelResponse):
@@ -84,74 +84,49 @@ class QwenVLModel(LanguageModel):
 
     def query(
         self,
-        user_prompt: str,
-        system_prompt: str,
+        prompt: Prompt,
         max_tokens: int = 256,
         temperature: float = 0.7,
-        top_p: float = 0.9,
-        distractor: Distractor | None = None
+        top_p: float = 0.9
     ) -> QwenVLModelResponse:
         image_inputs, video_inputs = None, None
-        if distractor:
-            if distractor["modality"] == Modality.IMAGE:
-                image_path = f"{PATH_DISTRACTORS}/{distractor["file_path"]}"
-                messages = [
-                    {
-                        "role": "system",
-                        "content": [
-                            {"type": "text", "text": system_prompt}
-                        ]
-                    },
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "image", "image": image_path},
-                            {"type": "text", "text": user_prompt}
-                        ]
-                    }
+        distractor = prompt["distractor"]
+        messages = [
+            {
+                "role": "system",
+                "content": [
+                    {"type": "text", "text": prompt["system_prompt"]}
                 ]
-                image_inputs, video_inputs = process_vision_info(messages)
-            else:
-                text_path = f"{os.path.abspath(os.getcwd())}/data/{distractor["file_path"]}"
-                with open(text_path, 'r') as f:
-                    distractor_text = f.read()
-                messages = [
-                    {
-                        "role": "system",
-                        "content": [
-                            {"type": "text", "text": system_prompt}
-                        ]
-                    },
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": f"{distractor_text} {user_prompt}"}
-                        ]
-                    }
+            },
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt["user_prompt"]}
                 ]
-        else:
-            messages = [
-                {
-                    "role": "system",
-                    "content": [
-                        {"type": "text", "text": system_prompt}
-                    ]
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": user_prompt}
-                    ]
-                }
-            ]
+            }
+        ]
 
-        prompt = self._processor.apply_chat_template(
+        if distractor and distractor["modality"] == Modality.IMAGE:
+            image_path = f"{PATH_DISTRACTORS}/{distractor["file_path"]}"
+            image_message = {"type": "image", "image": image_path}
+            match distractor["position"]:
+                case Position.BEFORE_SYSTEM:
+                    messages[0]["content"].insert(0, image_message)
+                case Position.AFTER_SYSTEM:
+                    messages[0]["content"].append(image_message)
+                case Position.BEFORE_USER:
+                    messages[1]["content"].insert(0, image_message)
+                case _:
+                    messages[1]["content"].append(image_message)
+            image_inputs, video_inputs = process_vision_info(messages)
+
+        text_prompt = self._processor.apply_chat_template(
             messages,
             tokenize=False,
             add_generation_prompt=True
         )
         inputs = self._processor(
-            text=[prompt],
+            text=[text_prompt],
             images=image_inputs,
             videos=video_inputs,
             padding=True,
@@ -172,9 +147,7 @@ class QwenVLModel(LanguageModel):
             )
 
         # Parse Output
-        answer_raw = self._processor.decode(
-            response.sequences[0], skip_special_tokens=True
-        ).strip()
+        answer_raw = self._processor.decode(response.sequences[0], skip_special_tokens=True).strip()
         answer = answer_raw[len(prompt) - 1:]
 
         return QwenVLModelResponse(
