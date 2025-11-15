@@ -7,10 +7,12 @@ from src.models.models import MODELS
 from src.models.openai_model import OpenAIModel
 from src.models.gemma_model import GemmaModel
 from src.models.llama_model import LlamaModel
+from src.models.ollama_model import OllamaModel
 
 OpenAIModel = OpenAIModel
 GemmaModel = GemmaModel
 LlamaModel = LlamaModel
+OllamaModel = OllamaModel
 
 
 def create_model(model_name):

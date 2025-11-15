@@ -1,3 +1,9 @@
+import os
+import pytest
+
+if not os.getenv("RUN_LLM_MODEL_TESTS"):
+    pytest.skip("Qwen integration test requires RUN_LLM_MODEL_TESTS=1", allow_module_level=True)
+
 from src.models.qwen_model import QwenModel
 from src.prompters.prompt import Distractor, Modality
 

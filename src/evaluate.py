@@ -3,18 +3,23 @@ import os
 import pickle
 import argparse
 import sys
-import torch
 import gc
+from pathlib import Path
+from typing import Optional
 
+os.environ.setdefault("HF_DATASETS_USE_DILL", "0")
+
+import torch
 import pandas as pd
 from tqdm import tqdm
-from datasets import load_dataset
+from datasets import load_dataset, config as datasets_config
+from huggingface_hub import hf_hub_download
 
 from src.models.model_creator import create_model
 from src.prompters.moralchoice_prompter import MoralChoicePrompter
 from src.prompters.reddit_prompter import RedditPrompter
 
-from src.config import PATH_RESULTS, PATH_RESPONSE_TEMPLATES
+from src.config import PATH_RESULTS, PATH_DISTRACTORS, PATH_HF_CACHE
 
 
 ################################################################################################
@@ -28,10 +33,16 @@ parser.add_argument(
     help="Name of Experiment - used for logging",
 )
 parser.add_argument(
-    "--dataset", default="high", type=str, help="Dataset to evaluate (moralchoice_high_ambiguity, moralchoice_law_ambiguity, reddit)"
+    "--dataset",
+    default="moralchoice_high_ambiguity",
+    type=str,
+    help="Dataset to evaluate (moralchoice_high_ambiguity, moralchoice_low_ambiguity, reddit)",
 )
 parser.add_argument(
-    "--distractors", default="none", type=str, help="Which distractors to use (all, text, image, none)"
+    "--distractors",
+    default="none",
+    type=str,
+    help="Which distractors to use (all, text, image, none)",
 )
 parser.add_argument(
     "--model-name",
@@ -41,9 +52,9 @@ parser.add_argument(
 )
 parser.add_argument(
     "--question-formats",
-    default=["ab"],
+    default=None,
     type=str,
-    help="Question Templates to evaluate",
+    help="Question Templates to evaluate (defaults depend on dataset)",
     nargs="+",
 )
 parser.add_argument(
@@ -64,27 +75,63 @@ parser.add_argument(
 parser.add_argument(
     "--eval-num-scenarios", default=-1, type=int, help="Num. of scenarios to evaluate"
 )
+parser.add_argument(
+    "--reddit-dataset-name",
+    default="ucberkeley-dlab/normative_evaluation_llms_everyday_dilemmas",
+    type=str,
+    help="Hugging Face dataset identifier to use for the reddit configuration.",
+)
+parser.add_argument(
+    "--reddit-text-column",
+    default="selftext",
+    type=str,
+    help="Column in the reddit dataset that contains the scenario text/selftext.",
+)
+parser.add_argument(
+    "--reddit-id-column",
+    default="submission_id",
+    type=str,
+    help="Column in the reddit dataset that should be treated as the scenario id.",
+)
 
 args = parser.parse_args()
+
+datasets_config.USE_DILL_FOR_PICKLING = False
+
+PATH_SCENARIOS = Path(__file__).resolve().parent.parent / "data" / "scenarios"
 
 
 ################################################################################################
 # PROMPTER CREATOR
 ################################################################################################
-DATASETS= {
+DATASETS = {
     "moralchoice_high_ambiguity": {
-        "prompter_class": "MoralChoicePrompter"
+        "prompter_class": "MoralChoicePrompter",
+        "scenario_loader": "csv",
+        "scenario_path": PATH_SCENARIOS / "moralchoice_high_ambiguity.csv",
+        "default_question_formats": ["ab"],
+        "supports_distractors": True,
     },
     "moralchoice_low_ambiguity": {
-        "prompter_class": "MoralChoicePrompter"
+        "prompter_class": "MoralChoicePrompter",
+        "scenario_loader": "csv",
+        "scenario_path": PATH_SCENARIOS / "moralchoice_low_ambiguity.csv",
+        "default_question_formats": ["ab"],
+        "supports_distractors": True,
     },
     "reddit": {
-        "prompter_class": "RedditPrompter"
-    }
+        "prompter_class": "RedditPrompter",
+        "scenario_loader": "reddit",
+        "default_question_formats": ["reddit"],
+        "supports_distractors": False,
+        "hf_dataset_name": "ucberkeley-dlab/normative_evaluation_llms_everyday_dilemmas",
+        "hf_dataset_file": "normative_evaluation_everyday_dilemmas_dataset.csv",
+    },
 }
 
 MoralChoicePrompter = MoralChoicePrompter
 RedditPrompter = RedditPrompter
+
 
 def create_prompter(dataset_name, model, max_tokens, temperature, top_p):
     """Init Models from model_name only"""
@@ -96,27 +143,146 @@ def create_prompter(dataset_name, model, max_tokens, temperature, top_p):
     raise ValueError(f"Unknown Dataset '{dataset_name}'")
 
 
+def _get_dataset_config(dataset_name: str) -> dict:
+    try:
+        return DATASETS[dataset_name]
+    except KeyError as exc:
+        raise ValueError(f"Unknown dataset '{dataset_name}'") from exc
+
+
+def _load_csv_scenarios(path: Path, max_rows: int) -> pd.DataFrame:
+    if not path.exists():
+        raise FileNotFoundError(f"Scenario file not found: {path}")
+    scenarios = pd.read_csv(path)
+    if max_rows > 0:
+        scenarios = scenarios.iloc[:max_rows]
+    return scenarios
+
+
+def _load_reddit_scenarios(max_rows: int) -> pd.DataFrame:
+    dataset_name = args.reddit_dataset_name or DATASETS["reddit"]["hf_dataset_name"]
+    dataset_config = _get_dataset_config("reddit")
+    dataset_file = dataset_config.get("hf_dataset_file", "cleaned_dataset.csv")
+    text_column = args.reddit_text_column
+    id_column = args.reddit_id_column
+
+    cache_path = hf_hub_download(
+        repo_id=dataset_name,
+        filename=dataset_file,
+        repo_type="dataset",
+        cache_dir=str(PATH_HF_CACHE),
+    )
+
+    read_kwargs = {
+        "usecols": lambda col: col in {text_column, id_column},
+    }
+    if max_rows > 0:
+        read_kwargs["nrows"] = max_rows
+
+    df = pd.read_csv(cache_path, **read_kwargs)
+    if text_column not in df.columns:
+        raise ValueError(
+            f"Column '{text_column}' not found in reddit dataset file '{dataset_file}'."
+        )
+
+    df[text_column] = df[text_column].astype(str).str.strip()
+    df = df[df[text_column] != ""]
+
+    if id_column in df.columns:
+        df["id"] = df[id_column].astype(str)
+    else:
+        df["id"] = df.index.astype(str)
+
+    scenarios = df.rename(columns={text_column: "selftext"})[["id", "selftext"]]
+    scenarios.reset_index(drop=True, inplace=True)
+    return scenarios
+
+
+def load_scenarios(dataset_name: str, max_rows: int) -> pd.DataFrame:
+    dataset_config = _get_dataset_config(dataset_name)
+    loader_key = dataset_config.get("scenario_loader", "csv")
+    if loader_key == "csv":
+        return _load_csv_scenarios(dataset_config["scenario_path"], max_rows)
+    if loader_key == "reddit":
+        return _load_reddit_scenarios(max_rows)
+    raise ValueError(f"Unsupported loader '{loader_key}' for dataset '{dataset_name}'.")
+
+
+def load_distractors(setting: str) -> Optional[pd.DataFrame]:
+    setting = (setting or "none").lower()
+    if setting == "none":
+        return None
+
+    distractor_path = PATH_DISTRACTORS / "distractors.csv"
+    if not distractor_path.exists():
+        raise FileNotFoundError(f"Distractor file not found: {distractor_path}")
+
+    distractors = pd.read_csv(distractor_path)
+    if setting == "text":
+        distractors = distractors[distractors["modality"] == "text"]
+    elif setting == "image":
+        distractors = distractors[distractors["modality"] == "image"]
+    elif setting not in {"all"}:
+        raise ValueError(
+            f"Unknown distractor setting '{setting}'. Expected one of all, text, image, none."
+        )
+
+    if distractors.empty:
+        return None
+    return distractors
+
+
+def _safe_identifier(value: str) -> str:
+    return "".join(
+        c if c.isalnum() or c in {"-", "_"} else "_"
+        for c in str(value)
+    )
+
+
+
 ################################################################################################
 # SETUP
 ################################################################################################
 
-# Load scenarios
-scenarios = pd.read_csv(f"data/scenarios/{args.dataset}.csv")
-scenarios = scenarios[:args.eval_num_scenarios] if args.eval_num_scenarios > 0 else scenarios
-# TODO: add support for reddit dataset
+dataset_config = _get_dataset_config(args.dataset)
+question_formats = args.question_formats or dataset_config.get(
+    "default_question_formats", []
+)
+if not question_formats:
+    raise ValueError(f"No question formats provided for dataset '{args.dataset}'.")
 
-distractors = pd.read_csv(f"data/distractors.csv")
-if args.distractors == "text":
-    distractors = distractors[distractors['modality'] == "text"]
-elif args.distractors == "none":
+scenarios = load_scenarios(args.dataset, args.eval_num_scenarios)
+
+supports_distractors = dataset_config.get("supports_distractors", True)
+if supports_distractors:
+    distractors = load_distractors(args.distractors)
+else:
+    if args.distractors.lower() != "none":
+        print(
+            f"[Setup] Distractors disabled for dataset '{args.dataset}'. "
+            f"Ignoring requested setting '{args.distractors}'."
+        )
     distractors = None
 
+print(
+    f"[Setup] Experiment '{args.experiment_name}' | Dataset '{args.dataset}' | "
+    f"Scenarios: {len(scenarios)} | Question formats: {', '.join(question_formats)}"
+)
+if distractors is None:
+    print("[Setup] Running without distractors.")
+else:
+    print(f"[Setup] Loaded {len(distractors)} distractors ({args.distractors}).")
+
 # Creates result folders
-path_model = f"{PATH_RESULTS}/{args.experiment_name}/{args.dataset}_raw/{args.model_name.split('/')[-1]}"
-for question_format in args.question_formats:
-    path_model_questiontype = path_model + f"/{question_format}"
-    if not os.path.exists(path_model_questiontype):
-        os.makedirs(path_model_questiontype)
+path_model = (
+    PATH_RESULTS
+    / args.experiment_name
+    / f"{args.dataset}_raw"
+    / args.model_name.split("/")[-1]
+)
+for question_format in question_formats:
+    path_model_questiontype = path_model / question_format
+    os.makedirs(path_model_questiontype, exist_ok=True)
 
 
 ################################################################################################
@@ -125,7 +291,13 @@ for question_format in args.question_formats:
 gc.collect()
 torch.cuda.empty_cache()
 model = create_model(args.model_name)
-prompter = create_prompter(args.dataset, model, args.eval_max_tokens, args.eval_temp, args.eval_top_p)
+prompter = create_prompter(
+    args.dataset,
+    model,
+    args.eval_max_tokens,
+    args.eval_temp,
+    args.eval_top_p,
+)
 
 if distractors is None:
     for i_s, scenario in tqdm(
@@ -136,18 +308,21 @@ if distractors is None:
         leave=True,
         desc=f"No Moral Distractors Eval: {model.get_model_id()}",
     ):
-        for question_format in args.question_formats:
+        for question_format in question_formats:
             # No distractor condition
             results = prompter.prompt(
                 question_format=question_format,
                 scenario_series=scenario,
-                distractor_series =None
+                distractor_series=None,
             )
 
-            with open(
-                    f'{path_model}/{question_format}/scenario_{scenario["id"]}_no_distractor.pickle',
-                    "wb",
-            ) as f:
+            scenario_id = _safe_identifier(scenario["id"])
+            result_path = (
+                path_model
+                / question_format
+                / f"scenario_{scenario_id}_no_distractor.pickle"
+            )
+            with open(result_path, "wb") as f:
                 pickle.dump(pd.DataFrame(results), f, protocol=0)
 else:
     for (i_s, scenario), (i_d, distractor) in tqdm(
@@ -156,17 +331,21 @@ else:
         position=0,
         ncols=100,
         leave=True,
-        desc=f"Moral Distractors Eval: {model.get_model_id()}"
+        desc=f"Moral Distractors Eval: {model.get_model_id()}",
     ):
-        for question_format in args.question_formats:
+        for question_format in question_formats:
             results = prompter.prompt(
                 question_format=question_format,
                 scenario_series=scenario,
-                distractor_series = distractor
+                distractor_series=distractor,
             )
 
-            with open(
-                    f'{path_model}/{question_format}/scenario_{scenario["id"]}_distractor_{distractor["id"]}.pickle',
-                    "wb",
-            ) as f:
+            scenario_id = _safe_identifier(scenario["id"])
+            distractor_id = _safe_identifier(distractor["id"])
+            result_path = (
+                path_model
+                / question_format
+                / f"scenario_{scenario_id}_distractor_{distractor_id}.pickle"
+            )
+            with open(result_path, "wb") as f:
                 pickle.dump(pd.DataFrame(results), f, protocol=0)

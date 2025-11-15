@@ -1,5 +1,12 @@
-from enum import StrEnum
-from typing import TypedDict
+from enum import Enum
+from typing import TypedDict, Optional
+
+try:  # pragma: no cover
+    from enum import StrEnum  # type: ignore
+except ImportError:  # pragma: no cover
+    class StrEnum(str, Enum):
+        """Fallback for Python < 3.11."""
+        pass
 
 
 class Modality(StrEnum):
@@ -20,6 +27,6 @@ class Scenario(TypedDict):
 
 class Prompt(TypedDict):
     scenario: Scenario
-    distractor: Distractor | None
+    distractor: Optional[Distractor]
     system_prompt: str
     user_prompt: str

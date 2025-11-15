@@ -1,3 +1,9 @@
+import os
+import pytest
+
+if not os.getenv("RUN_LLM_MODEL_TESTS"):
+    pytest.skip("Gemma integration test requires RUN_LLM_MODEL_TESTS=1", allow_module_level=True)
+
 from src.models.gemma_model import GemmaModel
 
 gemma_model: GemmaModel = GemmaModel("google/gemma-3-4b-pt")

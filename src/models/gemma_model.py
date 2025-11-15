@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import torch
 import math
@@ -187,7 +189,7 @@ class GemmaModel(LanguageModel):
         """
         if distractor is not None:
             if distractor["modality"] == Modality.IMAGE:
-                image_path = f"{os.path.abspath(os.getcwd())}/data/{distractor["file_path"]}"
+                image_path = f"{os.path.abspath(os.getcwd())}/data/{distractor['file_path']}"
                 return self._generate_with_image(
                     image_path=image_path,
                     system_prompt=system_prompt,
@@ -197,7 +199,7 @@ class GemmaModel(LanguageModel):
                     top_p=top_p
                 )
             else:
-                text_path = f"{os.path.abspath(os.getcwd())}/data/{distractor["file_path"]}"
+                text_path = f"{os.path.abspath(os.getcwd())}/data/{distractor['file_path']}"
                 with open(text_path, 'r') as f:
                     distractor_text = f.read()
                     user_prompt = f"{distractor_text} {user_prompt}"

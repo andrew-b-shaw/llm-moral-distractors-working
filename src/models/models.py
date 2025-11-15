@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import re
 import sys
@@ -117,7 +119,16 @@ MODELS = dict(
             "8bit": False,
             "likelihood_access": True,
             "endpoint": None,
-        }
+        },
+        "ollama/gemma3-4b": {
+            "company": "ollama",
+            "model_class": "OllamaModel",
+            "model_name": "ollama/gemma3-4b",
+            "ollama_model": "gemma3:4b",
+            "8bit": False,
+            "likelihood_access": False,
+            "endpoint": "ollama",
+        },
     }
 )
 
@@ -186,6 +197,4 @@ class LanguageModel:
         :return:                answer string
         """
         pass
-
-
 

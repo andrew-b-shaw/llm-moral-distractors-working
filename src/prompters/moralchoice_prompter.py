@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pandas as pd
 
 from data.templates.question_templates import QUESTION_TEMPLATES

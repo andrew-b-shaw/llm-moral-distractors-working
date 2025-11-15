@@ -5,3 +5,6 @@ cache/
 .DS_Store
 python
 data/responses/
+__pycache__/
+*.pyc
+data/csv_results/

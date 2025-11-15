@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import torch
 import math
@@ -99,8 +101,8 @@ class QwenModel(LanguageModel):
             if distractor["modality"] == Modality.IMAGE:
                 raise Exception("This model does not support image inputs!")
 
-            text_path = f"{os.path.abspath(os.getcwd())}/data/{distractor["file_path"]}"
-            with (open(text_path, 'r') as f):
+            text_path = f"{os.path.abspath(os.getcwd())}/data/{distractor['file_path']}"
+            with open(text_path, 'r') as f:
                 distractor_text = f.read()
                 user_prompt = f"{distractor_text} {user_prompt}"
 
