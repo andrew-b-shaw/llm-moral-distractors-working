@@ -53,7 +53,7 @@ class OllamaModel(LanguageModel):
             distractor_text = f.read().strip()
         if not distractor_text:
             return user_prompt
-        return f"{distractor_text}\n\n{user_prompt}".strip()
+        return f"{distractor_text}\n\nLater, {user_prompt}".strip()
 
     def _build_prompt(self, system_prompt: str, user_prompt: str) -> str:
         system = system_prompt.strip()

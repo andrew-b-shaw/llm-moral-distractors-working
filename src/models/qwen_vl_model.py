@@ -93,6 +93,7 @@ class QwenVLModel(LanguageModel):
         distractor: Distractor | None = None
     ) -> QwenModelResponse:
         if distractor["modality"] == Modality.IMAGE:
+            user_prompt = f"You see the scene in the image. {user_prompt}"
             messages = [
                 {
                     "role": "system",
@@ -133,7 +134,7 @@ class QwenVLModel(LanguageModel):
             text_path = f"{os.path.abspath(os.getcwd())}/data/{distractor["file_path"]}"
             with open(text_path, 'r') as f:
                 distractor_text = f.read()
-                prompt = f"{system_prompt} {distractor_text} {user_prompt}"
+                prompt = f"{system_prompt} {distractor_text} Later, {user_prompt}"
             inputs = self._processor(
                 text=prompt,
                 return_tensors="pt"

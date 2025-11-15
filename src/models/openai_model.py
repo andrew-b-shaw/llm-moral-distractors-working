@@ -3,9 +3,11 @@ from datetime import time
 
 import openai
 from pathlib import Path
+import os
 
 from src.models.models import LanguageModel, MODELS, API_TIMEOUTS, LanguageModelResponse
 from src.models.model_utils import get_timestamp, get_api_key
+from src.prompters.prompt import Distractor, Modality
 
 
 class OpenAIModelResponse(LanguageModelResponse):
@@ -116,11 +118,21 @@ class OpenAIModel(LanguageModel):
             max_tokens: int,
             temperature: float,
             top_p: float,
-            image_path: str = None,
+            distractor: Distractor | None = None
     ) -> any:
         result = {
             "timestamp": get_timestamp(),
         }
+
+        if distractor is not None:
+            if distractor["modality"] == Modality.IMAGE:
+                user_prompt = f"You see the scene in the image. {user_prompt}"
+                image_path = f"{os.path.abspath(os.getcwd())}/data/{distractor['file_path']}"
+            else:
+                text_path = f"{os.path.abspath(os.getcwd())}/data/{distractor['file_path']}"
+                with open(text_path, 'r') as f:
+                    distractor_text = f.read()
+                    user_prompt = f"{distractor_text} Later, {user_prompt}"
 
         # (1) Top-P Sampling
         response = self._prompt_request(
