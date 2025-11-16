@@ -5,8 +5,9 @@ import re
 import pandas as pd
 
 from data.templates.question_templates import QuestionTemplate, QUESTION_TEMPLATES
+from src.classifier import ME2BERTScorer
 from src.config import PATH_DISTRACTORS
-from src.models.models import LanguageModelResponse
+from src.models.models import LanguageModelResponse, LanguageModel
 from src.prompters.prompter import Prompter
 from src.prompters.prompt import Prompt, Scenario, Distractor, Modality, Position
 
@@ -16,6 +17,10 @@ class RedditPrompter(Prompter[Prompt]):
     _VALID_VERDICTS = ("YTA", "NTA", "ESH", "NAH", "INFO")
     _VERDICT_REGEX = re.compile(r"(?i)\bVerdict\b\s*[:\-]\s*(YTA|NTA|ESH|NAH|INFO)\b")
     _REASONING_REGEX = re.compile(r"(?is)\b(?:Reasoning|Reason|Explanation)\b\s*[:\-]\s*(.+)")
+
+    def __init__(self, model: LanguageModel, max_tokens: int, temperature: float, top_p: float):
+        super().__init__(model, max_tokens, temperature, top_p)
+        self._me2_bert_scorer = ME2BERTScorer()
 
     def generate_prompt(
         self,
@@ -31,7 +36,6 @@ class RedditPrompter(Prompter[Prompt]):
             "distractor": distractor,
             "system_prompt": system_prompt,
             "user_prompt": user_prompt,
-            "question_format": question_format
         }
 
         return prompt
@@ -118,6 +122,7 @@ class RedditPrompter(Prompter[Prompt]):
         response_text = self._get_response_text(response)
         verdict, verdict_idx = self._extract_verdict(response_text)
         reasoning = self._extract_reasoning(response_text, verdict_idx)
+        me2_result = self._me2_bert_scorer.predict([reasoning])[0]
 
         result = {
             "scenario_id": prompt["scenario"]["id"],
@@ -138,7 +143,12 @@ class RedditPrompter(Prompter[Prompt]):
             "answer": response.answer,
             "response_text": response_text,
             "verdict": verdict,
-            "reasoning": reasoning
+            "reasoning": reasoning,
+            "ch_score": me2_result.scores['CH'],
+            "fc_score": me2_result.scores['FC'],
+            "lb_score": me2_result.scores['LB'],
+            "as_score": me2_result.scores['AS'],
+            "pd_score": me2_result.scores['PD']
         }
         return result
 
