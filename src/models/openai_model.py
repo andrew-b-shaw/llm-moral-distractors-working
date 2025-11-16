@@ -5,25 +5,33 @@ import openai
 from pathlib import Path
 import os
 
+import torch
+
 from src.models.models import LanguageModel, MODELS, API_TIMEOUTS, LanguageModelResponse
 from src.models.model_utils import get_timestamp, get_api_key
 from src.prompters.prompt import Distractor, Modality
-
+from transformers.generation.utils import GenerateDecoderOnlyOutput
+import tiktoken
 
 class OpenAIModelResponse(LanguageModelResponse):
-    _output: any
+    model="gpt-4o"
+    _tokenizer = tiktoken.encoding_for_model(model)
+    _output: GenerateDecoderOnlyOutput
 
     def __init__(
             self,
             timestamp: str,
             answer: str,
             answer_raw: str,
-            output: any,
+            output: GenerateDecoderOnlyOutput,
     ):
         super().__init__(timestamp, answer, answer_raw)
+        self._output = output
+        tokenizer = tiktoken.encoding_for_model("gpt-4o")
+        self._tokenizer = tokenizer
 
     def get_answer_prob(self, answer: str) -> float:
-        token_ids = self._tokenizer(answer).input_ids
+        token_ids = self._tokenizer.encode(answer).input_ids
         if len(token_ids) - 1 > len(self._output.logits):
             return 0.0
 
@@ -100,11 +108,10 @@ class OpenAIModel(LanguageModel):
         return response
 
     def get_greedy_answer(
-            self, prompt_base: str, prompt_system: str, max_tokens: int, image_path: str = None
+            self, prompt: str, max_tokens: int, image_path: str = None
     ) -> str:
         return self.query(
-            user_prompt=prompt_base,
-            system_prompt=prompt_system,
+            prompt=prompt,
             max_tokens=max_tokens,
             temperature=0,
             top_p=1.0,
@@ -113,70 +120,54 @@ class OpenAIModel(LanguageModel):
 
     def query(
             self,
-            user_prompt: str,
-            system_prompt: str,
+            prompt: str,
             max_tokens: int,
             temperature: float,
             top_p: float,
-            distractor: Distractor | None = None
-    ) -> any:
-        result = {
-            "timestamp": get_timestamp(),
-        }
-
+            distractor: Distractor | None = None,
+            enable_thinking: bool = False,
+    ) -> OpenAIModelResponse:
+        distractor = prompt["distractor"]
         if distractor is not None:
             if distractor["modality"] == Modality.IMAGE:
-                user_prompt = f"You see the scene in the image. {user_prompt}"
-                image_path = f"{os.path.abspath(os.getcwd())}/data/{distractor['file_path']}"
-            else:
-                text_path = f"{os.path.abspath(os.getcwd())}/data/{distractor['file_path']}"
-                with open(text_path, 'r') as f:
-                    distractor_text = f.read()
-                    user_prompt = f"{distractor_text} Later, {user_prompt}"
+                raise ValueError("This model does not support image inputs!")
 
-        # (1) Top-P Sampling
-        response = self._prompt_request(
-            prompt_base=user_prompt,
-            prompt_system=system_prompt,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            frequency_penalty=0.0,
-            presence_penalty=0.0,
-            image_path=image_path
+        messages = [
+            {"role": "system", "content": prompt["system_prompt"]},
+            {"role": "user", "content": prompt["user_prompt"]}
+        ]
+        text_prompt = self._tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=enable_thinking
         )
+ 
+        inputs = self._tokenizer(
+            text=[text_prompt],
+            return_tensors="pt"
+        ).to(self._device)
 
-        completion = response.choices[0].message.content.strip()
+        with torch.no_grad():
+            output = self._model.generate(
+                **inputs,
+                max_new_tokens=max_tokens,
+                do_sample=True,
+                temperature=temperature,
+                top_p=top_p,
+                pad_token_id=self._tokenizer.eos_token_id,
+                output_scores=True,
+                output_logits=True,
+                return_dict_in_generate=True,
+            )
 
-        result["answer_raw"] = completion.strip()
-        result["answer"] = completion.strip()
+        answer_raw = self._tokenizer.decode(output.sequences[0], skip_special_tokens=True)
+        answer = answer_raw[answer_raw.rfind("assistant") + len("assistant"):].strip()
 
-        logprobs = response.choices[0].logprobs.content[0].top_logprobs
-        token_probs = {
-            "Yes": 0,
-            "yes": 0,
-            "No": 0,
-            "no": 0,
-            "A": 0,
-            "a": 0,
-            "B": 0,
-            "b": 0,
-            " Yes": 0,
-            " No": 0,
-            " yes": 0,
-            " no": 0,
-            " A": 0,
-            " B": 0,
-            " a": 0,
-            " b": 0
-        }
-        for logprob in logprobs:
-            if logprob.token in token_probs.keys():
-                token_probs[logprob.token] = math.exp(logprob.logprob)
-
-        result["token_prob_yes"] = token_probs["Yes"] + token_probs["yes"] + token_probs[" Yes"] + token_probs[" yes"]
-        result["token_prob_no"] = token_probs["No"] + token_probs["no"] + token_probs[" No"] + token_probs[" no"]
-        result["token_prob_a"] = token_probs["A"] + token_probs["a"] + token_probs[" A"] + token_probs[" a"]
-        result["token_prob_b"] = token_probs["B"] + token_probs["b"] + token_probs[" B"] + token_probs[" b"]
-
-        return result
+        return OpenAIModelResponse(
+            timestamp=get_timestamp(),
+            answer_raw=answer_raw,
+            answer=answer,
+            output=output,
+            tokenizer=self._tokenizer
+        )
