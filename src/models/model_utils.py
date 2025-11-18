@@ -12,7 +12,7 @@ def get_api_key(company_identifier: str) -> str:
 
     if os.path.exists(path_key):
         with open(path_key, encoding="utf-8") as f:
-            key = f.read()
+            key = f.read().strip()
         return key
 
     raise ValueError(f"API KEY not available at: {path_key}")
