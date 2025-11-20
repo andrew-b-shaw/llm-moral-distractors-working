@@ -2,6 +2,8 @@ import math
 from datetime import time
 
 import openai
+from openai import OpenAI
+
 from pathlib import Path
 import os
 
@@ -14,8 +16,10 @@ from transformers.generation.utils import GenerateDecoderOnlyOutput
 import tiktoken
 
 class OpenAIModelResponse(LanguageModelResponse):
-    model="gpt-4o"
-    _tokenizer = tiktoken.encoding_for_model(model)
+    model="cl100k_base" # "gpt-4o"
+    # _tokenizer = tiktoken.encoding_for_model(model)
+    _tokenizer = tiktoken.get_encoding("cl100k_base") 
+
     _output: GenerateDecoderOnlyOutput
 
     def __init__(
@@ -27,7 +31,8 @@ class OpenAIModelResponse(LanguageModelResponse):
     ):
         super().__init__(timestamp, answer, answer_raw)
         self._output = output
-        tokenizer = tiktoken.encoding_for_model("gpt-4o")
+        # tokenizer = tiktoken.encoding_for_model("gpt-4o")
+        tokenizer = tiktoken.get_encoding("cl100k_base") 
         self._tokenizer = tokenizer
 
     def get_answer_prob(self, answer: str) -> float:
@@ -54,8 +59,9 @@ class OpenAIModel(LanguageModel):
 
         api_key = get_api_key("openai")
         # openai.api_key = api_key
-        self._client = openai.OpenAI(api_key=api_key)
-
+        self._client = OpenAI(api_key=api_key)
+        self._tokenizer = tiktoken.get_encoding("cl100k_base")
+        
     def _prompt_request(
             self,
             prompt_base: str,
@@ -120,54 +126,76 @@ class OpenAIModel(LanguageModel):
 
     def query(
             self,
-            prompt: str,
+            prompt: dict,
             max_tokens: int,
-            temperature: float,
-            top_p: float,
+            temperature: float = 0.0,
+            top_p: float = 1.0,
             distractor: Distractor | None = None,
-            enable_thinking: bool = False,
+            enable_thinking: bool = False
     ) -> OpenAIModelResponse:
-        distractor = prompt["distractor"]
-        if distractor is not None:
-            if distractor["modality"] == Modality.IMAGE:
-                raise ValueError("This model does not support image inputs!")
+        """
+        OpenAI API wrapper
+        """
+
+        distractor_obj = prompt.get("distractor")
+        if distractor_obj is not None and distractor_obj["modality"] == Modality.IMAGE:
+            raise ValueError("This model does not support image inputs!")
+
+        # this was apply_chat_template before? 
+        # I (catherine) changed it to format_messages to match other models
+        def format_messages(messages, add_generation_prompt=True, enable_thinking=False):
+            prompt_text = ""
+            for m in messages:
+                content = m["content"]
+                if isinstance(content, list):  # user_content may be a list of dicts
+                    for c in content:
+                        if "text" in c:
+                            prompt_text += c["text"] + "\n"
+                else:
+                    prompt_text += content + "\n"
+
+            if add_generation_prompt:
+                prompt_text += "\nAnswer:"
+            return prompt_text
 
         messages = [
             {"role": "system", "content": prompt["system_prompt"]},
             {"role": "user", "content": prompt["user_prompt"]}
         ]
-        text_prompt = self._tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True,
-            enable_thinking=enable_thinking
-        )
- 
-        inputs = self._tokenizer(
-            text=[text_prompt],
-            return_tensors="pt"
-        ).to(self._device)
 
-        with torch.no_grad():
-            output = self._model.generate(
-                **inputs,
-                max_new_tokens=max_tokens,
-                do_sample=True,
-                temperature=temperature,
-                top_p=top_p,
-                pad_token_id=self._tokenizer.eos_token_id,
-                output_scores=True,
-                output_logits=True,
-                return_dict_in_generate=True,
-            )
+        text_prompt = format_messages(messages, add_generation_prompt=True, enable_thinking=enable_thinking)
 
-        answer_raw = self._tokenizer.decode(output.sequences[0], skip_special_tokens=True)
-        answer = answer_raw[answer_raw.rfind("assistant") + len("assistant"):].strip()
+        # API call
+        success = False
+        t = 0
+        while not success:
+            try:
+                response = self._client.chat.completions.create(
+                    model=self._model_name,
+                    messages=[
+                        {"role": "system", "content": prompt["system_prompt"]},
+                        {"role": "user", "content": prompt["user_prompt"]}
+                    ],
+                    temperature=temperature,
+                    top_p=top_p,
+                    max_tokens=max_tokens,
+                    logprobs=20,
+                )
+                success = True
+            except Exception as e:
+                print(e)
+                import time
+                time.sleep(API_TIMEOUTS[t])
+                t = min(t + 1, len(API_TIMEOUTS) - 1)
+
+        # get text answer
+        answer_raw = response.choices[0].message["content"]
+        answer = answer_raw.strip()
 
         return OpenAIModelResponse(
             timestamp=get_timestamp(),
             answer_raw=answer_raw,
             answer=answer,
-            output=output,
+            output=response,        # API response here
             tokenizer=self._tokenizer
         )
