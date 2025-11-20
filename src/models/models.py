@@ -11,10 +11,10 @@ API_TIMEOUTS = [1, 2, 4, 8, 16, 32]
 ####################################################################################
 MODELS = dict(
     {
-        "openai/gpt-5": {
+        "openai/gpt-4": {
             "company": "openai",
             "model_class": "OpenAIModel",
-            "model_name": "gpt-5",
+            "model_name": "gpt-4.1",
             "8bit": None,
             "likelihood_access": False,
             "endpoint": "ChatCompletion",

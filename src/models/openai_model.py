@@ -179,7 +179,7 @@ class OpenAIModel(LanguageModel):
                     temperature=temperature,
                     top_p=top_p,
                     max_tokens=max_tokens,
-                    logprobs=20,
+                    logprobs=True,
                 )
                 success = True
             except Exception as e:
@@ -188,7 +188,14 @@ class OpenAIModel(LanguageModel):
                 time.sleep(API_TIMEOUTS[t])
                 t = min(t + 1, len(API_TIMEOUTS) - 1)
 
-        # get text answer
+        choice = response.choices[0]
+
+        if choice.logprobs is not None and choice.logprobs.content is not None:
+            for token_obj in choice.logprobs.content:
+                print(f"Token: {token_obj.token!r}, LogProb: {token_obj.logprob:.6f}")
+        else:
+            print("No logprobs available for this model.")
+                
         answer_raw = response.choices[0].message["content"]
         answer = answer_raw.strip()
 
