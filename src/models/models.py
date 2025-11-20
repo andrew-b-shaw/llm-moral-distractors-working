@@ -43,6 +43,22 @@ MODELS = dict(
             "likelihood_access": True,
             "endpoint": None
         },
+        "google/gemma-3-270m-pt": {
+            "company": "google",
+            "model_class": "GemmaModel",
+            "model_name": "google/gemma-3-270m-pt",
+            "8bit": False,
+            "likelihood_access": True,
+            "endpoint": None,
+        },
+        "google/gemma-3-270m-it": {
+            "company": "google",
+            "model_class": "GemmaModel",
+            "model_name": "google/gemma-3-270m-it",
+            "8bit": False,
+            "likelihood_access": True,
+            "endpoint": None,
+        },
         "google/gemma-3-1b-pt": {
             "company": "google",
             "model_class": "GemmaModel",
@@ -117,7 +133,7 @@ MODELS = dict(
             "endpoint": "ollama",
         },
         "meta-llama/Llama-3.2-3B-Instruct": {
-            "company":"Meta",
+            "company": "Meta",
             "model_class": "LlamaModel",
             "model_name": "meta-llama/Llama-3.2-3B-Instruct",
             "8bit": False,

@@ -322,11 +322,6 @@ prompter = create_prompter(
 
 def run_experiment(scenario_series: pd.Series, distractor_series: Optional[pd.Series]):
     for question_format in question_formats:
-        results = prompter.prompt(
-            question_format=question_format,
-            scenario_series=scenario_series,
-            distractor_series=distractor_series,
-        )
         s_id = _safe_identifier(scenario_series)
         d_id = _safe_identifier(distractor_series)
         result_path = (
@@ -334,6 +329,24 @@ def run_experiment(scenario_series: pd.Series, distractor_series: Optional[pd.Se
                 / question_format
                 / f"s_{s_id}_d_{d_id}.pickle"
         )
+        if os.path.exists(result_path):
+            continue
+
+        success = False
+
+        while not success:
+            try:
+                results = prompter.prompt(
+                    question_format=question_format,
+                    scenario_series=scenario_series,
+                    distractor_series=distractor_series,
+                )
+                success = True  # Set to True to exit the loop on success
+            except ValueError as e:
+                print(f"Caught exception: {e}")
+            except Exception as e:
+                print(f"Caught an unexpected exception: {e}")
+
         with open(result_path, "wb") as f:
             pickle.dump(pd.DataFrame(results), f, protocol=0)
 
