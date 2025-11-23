@@ -334,21 +334,27 @@ def run_experiment(scenario_series: pd.Series, distractor_series: Optional[pd.Se
 
         success = False
 
-        while not success:
-            try:
-                results = prompter.prompt(
-                    question_format=question_format,
-                    scenario_series=scenario_series,
-                    distractor_series=distractor_series,
-                )
-                success = True  # Set to True to exit the loop on success
-            except ValueError as e:
-                print(f"Caught exception: {e}")
-            except Exception as e:
-                print(f"Caught an unexpected exception: {e}")
-
-        with open(result_path, "wb") as f:
-            pickle.dump(pd.DataFrame(results), f, protocol=0)
+        prompter.prompt_batch(
+            filename=f"{args.model_name.split("/")[-1]}_{args.dataset}.jsonl",
+            question_format=question_format,
+            scenario_series=scenario_series,
+            distractor_series=distractor_series
+        )
+        # while not success:
+        #     try:
+        #         results = prompter.prompt(
+        #             question_format=question_format,
+        #             scenario_series=scenario_series,
+        #             distractor_series=distractor_series,
+        #         )
+        #         success = True  # Set to True to exit the loop on success
+        #     except ValueError as e:
+        #         print(f"Caught exception: {e}")
+        #     except Exception as e:
+        #         print(f"Caught an unexpected exception: {e}")
+        #
+        # with open(result_path, "wb") as f:
+        #     pickle.dump(pd.DataFrame(results), f, protocol=0)
 
 for i_s, scenario_series in tqdm(
     scenarios.iterrows(),

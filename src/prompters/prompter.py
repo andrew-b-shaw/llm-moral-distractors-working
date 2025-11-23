@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import pandas as pd
 
 from abc import abstractmethod
@@ -61,6 +62,42 @@ class Prompter(Generic[AnyPrompt]):
         :return: the results as a dict
         """
         pass
+
+    def prompt_batch(
+        self,
+        filename: str,
+        question_format: str,
+        scenario_series: pd.Series,
+        distractor_series: pd.Series | None = None
+    ) -> None:
+        # Pre-process prompts
+        prompts = self.pre_process(
+            question_format=question_format,
+            scenario_series=scenario_series,
+            distractor_series=distractor_series,
+        )
+
+        # Query model with prompts
+        with open(filename, 'a') as f:
+            responses = []
+            for prompt in prompts:
+                prompt_id = f"{prompt["scenario"]["id"]}/{prompt["distractor"]["id"]}" \
+                    if prompt["distractor"] else f"{prompt["scenario"]["id"]}/none"
+                request = {
+                    "custom_id": prompt_id,
+                    "method": "POST",
+                    "url": "v1/chat/completions",
+                    "body": {
+                        "model": "gpt-4.1",
+                        "messages": [
+                            {"role": "system", "content": prompt["system_prompt"]},
+                            {"role": "user", "content": prompt["user_prompt"]}
+                        ],
+                        "max_tokens": self.max_tokens
+                    }
+                }
+                f.write(json.dumps(request))
+                f.write("\n")
 
     def prompt(
         self,

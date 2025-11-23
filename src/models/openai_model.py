@@ -2,7 +2,7 @@ import math
 from datetime import time
 
 import openai
-from openai import OpenAI
+from openai import OpenAI, ChatCompletion
 
 from pathlib import Path
 import os
@@ -11,43 +11,46 @@ import torch
 
 from src.models.models import LanguageModel, MODELS, API_TIMEOUTS, LanguageModelResponse
 from src.models.model_utils import get_timestamp, get_api_key
-from src.prompters.prompt import Distractor, Modality
+from src.prompters.prompt import Distractor, Modality, Prompt
 from transformers.generation.utils import GenerateDecoderOnlyOutput
 import tiktoken
+from tiktoken import Encoding
 
 class OpenAIModelResponse(LanguageModelResponse):
-    model="cl100k_base" # "gpt-4o"
-    # _tokenizer = tiktoken.encoding_for_model(model)
-    _tokenizer = tiktoken.get_encoding("cl100k_base") 
-
-    _output: GenerateDecoderOnlyOutput
+    _tokenizer: Encoding
+    _output: ChatCompletion
+    _top_logprobs: list[dict[str, float]]
 
     def __init__(
-            self,
-            timestamp: str,
-            answer: str,
-            answer_raw: str,
-            output: GenerateDecoderOnlyOutput,
+        self,
+        timestamp: str,
+        answer: str,
+        answer_raw: str,
+        output: ChatCompletion,
     ):
         super().__init__(timestamp, answer, answer_raw)
         self._output = output
-        # tokenizer = tiktoken.encoding_for_model("gpt-4o")
-        tokenizer = tiktoken.get_encoding("cl100k_base") 
-        self._tokenizer = tokenizer
+        self._tokenizer = tiktoken.get_encoding("cl100k_base")
+        self._top_logprobs = []
+        for token in self._output.choices[0].logprobs.content:
+            self._top_logprobs.append(dict([
+                (top_logprob.token, top_logprob.logprob)
+                for top_logprob in token.top_logprobs
+            ]))
 
     def get_answer_prob(self, answer: str) -> float:
-        token_ids = self._tokenizer.encode(answer).input_ids
-        if len(token_ids) - 1 > len(self._output.logits):
+        answer_tokens = [self._tokenizer.decode([token_id]) for token_id in self._tokenizer.encode(answer)]
+        if len(answer_tokens) > len(self._output.choices[0].logprobs.content):
             return 0.0
 
-        answer_log_prob = 0.0
-        for i in range(len(token_ids) - 1):
-            token_id = token_ids[i + 1]
-            logits = self._output.logits[i]
-            token_probs = torch.softmax(logits, dim=1).squeeze()
-            answer_log_prob += math.log(token_probs[token_id].item())
+        answer_logprob = 0.0
+        for answer_token, top_logprob in zip(answer_tokens, self._top_logprobs):
+            if answer_token in top_logprob:
+                answer_logprob += top_logprob[answer_token]
+            else:
+                return 0.0
 
-        return math.exp(answer_log_prob)
+        return math.exp(answer_logprob)
 
 class OpenAIModel(LanguageModel):
     """OpenAI API Wrapper"""
@@ -61,125 +64,38 @@ class OpenAIModel(LanguageModel):
         # openai.api_key = api_key
         self._client = OpenAI(api_key=api_key)
         self._tokenizer = tiktoken.get_encoding("cl100k_base")
-        
-    def _prompt_request(
-            self,
-            prompt_base: str,
-            prompt_system: str,
-            max_tokens: int,
-            temperature: float = 0.0,
-            top_p: float = 1.0,
-            frequency_penalty: float = 0.0,
-            presence_penalty: float = 0.0,
-            image_path: str = None,
-    ):
+
+    def query(
+        self,
+        prompt: Prompt,
+        max_tokens: int = 256,
+        temperature: float = 0.7,
+        top_p: float = 0.9
+    ) -> OpenAIModelResponse:
+        """
+        OpenAI API wrapper
+        """
+        distractor_obj = prompt.get("distractor")
+        if distractor_obj is not None and distractor_obj["modality"] == Modality.IMAGE:
+            raise ValueError("This model does not support image inputs!")
+
+        # API call
+        messages = [
+            {"role": "system", "content": prompt["system_prompt"]},
+            {"role": "user", "content": prompt["user_prompt"]}
+        ]
         success = False
         t = 0
-
         while not success:
             try:
-                # Dialogue Format
-                user_content = [{"type": "text", "text": prompt_base}]
-                if image_path:
-                    # Append image to same user message
-                    image_url = f"data:image/{Path(image_path).suffix[1:]};base64,{self._encode_image(image_path)}"
-                    user_content.append({"type": "image_url", "image_url": {"url": image_url}})
-
-                messages = [
-                    {"role": "system", "content": f"{prompt_system[:-2]}"},
-                    {"role": "user", "content": user_content},
-                ]
-
-                # Query ChatCompletion endpoint
                 response = self._client.chat.completions.create(
                     model=self._model_name,
                     messages=messages,
                     temperature=temperature,
                     top_p=top_p,
                     max_tokens=max_tokens,
-                    frequency_penalty=frequency_penalty,
-                    presence_penalty=presence_penalty,
                     logprobs=True,
                     top_logprobs=20
-                )
-
-                # Set success flag
-                success = True
-
-            except Exception as e:
-                print(e)
-                time.sleep(API_TIMEOUTS[t])
-                t = min(t + 1, len(API_TIMEOUTS) - 1)
-
-        return response
-
-    def get_greedy_answer(
-            self, prompt: str, max_tokens: int, image_path: str = None
-    ) -> str:
-        return self.query(
-            prompt=prompt,
-            max_tokens=max_tokens,
-            temperature=0,
-            top_p=1.0,
-            image_path=image_path
-        )
-
-    def query(
-            self,
-            prompt: dict,
-            max_tokens: int,
-            temperature: float = 0.0,
-            top_p: float = 1.0,
-            distractor: Distractor | None = None,
-            enable_thinking: bool = False
-    ) -> OpenAIModelResponse:
-        """
-        OpenAI API wrapper
-        """
-
-        distractor_obj = prompt.get("distractor")
-        if distractor_obj is not None and distractor_obj["modality"] == Modality.IMAGE:
-            raise ValueError("This model does not support image inputs!")
-
-        # this was apply_chat_template before? 
-        # I (catherine) changed it to format_messages to match other models
-        def format_messages(messages, add_generation_prompt=True, enable_thinking=False):
-            prompt_text = ""
-            for m in messages:
-                content = m["content"]
-                if isinstance(content, list):  # user_content may be a list of dicts
-                    for c in content:
-                        if "text" in c:
-                            prompt_text += c["text"] + "\n"
-                else:
-                    prompt_text += content + "\n"
-
-            if add_generation_prompt:
-                prompt_text += "\nAnswer:"
-            return prompt_text
-
-        messages = [
-            {"role": "system", "content": prompt["system_prompt"]},
-            {"role": "user", "content": prompt["user_prompt"]}
-        ]
-
-        text_prompt = format_messages(messages, add_generation_prompt=True, enable_thinking=enable_thinking)
-
-        # API call
-        success = False
-        t = 0
-        while not success:
-            try:
-                response = self._client.chat.completions.create(
-                    model=self._model_name,
-                    messages=[
-                        {"role": "system", "content": prompt["system_prompt"]},
-                        {"role": "user", "content": prompt["user_prompt"]}
-                    ],
-                    temperature=temperature,
-                    top_p=top_p,
-                    max_tokens=max_tokens,
-                    logprobs=True,
                 )
                 success = True
             except Exception as e:
@@ -188,15 +104,14 @@ class OpenAIModel(LanguageModel):
                 time.sleep(API_TIMEOUTS[t])
                 t = min(t + 1, len(API_TIMEOUTS) - 1)
 
-        choice = response.choices[0]
+        # choice = response.choices[0]
+        # if choice.logprobs is not None and choice.logprobs.content is not None:
+        #     for token_obj in choice.logprobs.content:
+        #         print(f"Token: {token_obj.token!r}, LogProb: {token_obj.logprob:.6f}")
+        # else:
+        #     print("No logprobs available for this model.")
 
-        if choice.logprobs is not None and choice.logprobs.content is not None:
-            for token_obj in choice.logprobs.content:
-                print(f"Token: {token_obj.token!r}, LogProb: {token_obj.logprob:.6f}")
-        else:
-            print("No logprobs available for this model.")
-                
-        answer_raw = response.choices[0].message["content"]
+        answer_raw = response.choices[0].message.content
         answer = answer_raw.strip()
 
         return OpenAIModelResponse(
@@ -204,5 +119,4 @@ class OpenAIModel(LanguageModel):
             answer_raw=answer_raw,
             answer=answer,
             output=response,        # API response here
-            tokenizer=self._tokenizer
         )
