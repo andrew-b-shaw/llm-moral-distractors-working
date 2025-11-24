@@ -34,6 +34,7 @@ class Scenario(TypedDict):
 
 
 class Prompt(TypedDict):
+    id: str
     scenario: Scenario
     distractor: Optional[Distractor]
     system_prompt: str

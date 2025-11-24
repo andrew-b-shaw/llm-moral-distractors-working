@@ -1,24 +1,19 @@
 import math
-from datetime import time
+import warnings
 
-import openai
-from openai import OpenAI, ChatCompletion
-
-from pathlib import Path
-import os
-
-import torch
-
-from src.models.models import LanguageModel, MODELS, API_TIMEOUTS, LanguageModelResponse
-from src.models.model_utils import get_timestamp, get_api_key
-from src.prompters.prompt import Distractor, Modality, Prompt
-from transformers.generation.utils import GenerateDecoderOnlyOutput
 import tiktoken
+import time
+import json
+
+from openai import OpenAI, ChatCompletion
+from src.models.models import LanguageModel, LanguageModelResponse
+from src.models.model_configs import MODELS, API_TIMEOUTS
+from src.models.model_utils import get_timestamp, get_api_key
+from src.prompters.prompt import Modality, Prompt
 from tiktoken import Encoding
 
 class OpenAIModelResponse(LanguageModelResponse):
     _tokenizer: Encoding
-    _output: ChatCompletion
     _top_logprobs: list[dict[str, float]]
 
     def __init__(
@@ -26,13 +21,12 @@ class OpenAIModelResponse(LanguageModelResponse):
         timestamp: str,
         answer: str,
         answer_raw: str,
-        output: ChatCompletion,
+        output: ChatCompletion
     ):
         super().__init__(timestamp, answer, answer_raw)
-        self._output = output
         self._tokenizer = tiktoken.get_encoding("cl100k_base")
         self._top_logprobs = []
-        for token in self._output.choices[0].logprobs.content:
+        for token in output.choices[0].logprobs.content:
             self._top_logprobs.append(dict([
                 (top_logprob.token, top_logprob.logprob)
                 for top_logprob in token.top_logprobs
@@ -40,7 +34,7 @@ class OpenAIModelResponse(LanguageModelResponse):
 
     def get_answer_prob(self, answer: str) -> float:
         answer_tokens = [self._tokenizer.decode([token_id]) for token_id in self._tokenizer.encode(answer)]
-        if len(answer_tokens) > len(self._output.choices[0].logprobs.content):
+        if len(answer_tokens) > len(self._top_logprobs):
             return 0.0
 
         answer_logprob = 0.0
@@ -100,16 +94,8 @@ class OpenAIModel(LanguageModel):
                 success = True
             except Exception as e:
                 print(e)
-                import time
                 time.sleep(API_TIMEOUTS[t])
                 t = min(t + 1, len(API_TIMEOUTS) - 1)
-
-        # choice = response.choices[0]
-        # if choice.logprobs is not None and choice.logprobs.content is not None:
-        #     for token_obj in choice.logprobs.content:
-        #         print(f"Token: {token_obj.token!r}, LogProb: {token_obj.logprob:.6f}")
-        # else:
-        #     print("No logprobs available for this model.")
 
         answer_raw = response.choices[0].message.content
         answer = answer_raw.strip()
@@ -118,5 +104,122 @@ class OpenAIModel(LanguageModel):
             timestamp=get_timestamp(),
             answer_raw=answer_raw,
             answer=answer,
-            output=response,        # API response here
+            output=response
+        )
+
+
+class OpenAIBatchSubmitResponse(LanguageModelResponse):
+    def get_answer_prob(self, answer: str) -> float:
+        return 0.0
+
+
+class OpenAIBatchSubmitModel(LanguageModel):
+
+    def __init__(self, model_name: str):
+        super().__init__(model_name)
+        warnings.warn("Prompter post-processing may need to be manually disabled when submitting a batch request!")
+        warnings.warn("Filename MUST be set manually in the OpenAIBatchSubmitModel config!")
+
+    def query(
+        self,
+        prompt: Prompt,
+        max_tokens: int = 256,
+        temperature: float = 0.7,
+        top_p: float = 0.9
+    ) -> LanguageModelResponse:
+        with open(MODELS[self._model_name]["output_filepath"], 'a') as f:
+            request = {
+                "custom_id": prompt["id"],
+                "method": "POST",
+                "url": "/v1/chat/completions",
+                "body": {
+                    "model": "gpt-4.1",
+                    "messages": [
+                        {"role": "system", "content": prompt["system_prompt"]},
+                        {"role": "user", "content": prompt["user_prompt"]}
+                    ],
+                    "max_completion_tokens": max_tokens,
+                    "temperature": temperature,
+                    "top_p": top_p,
+                    "logprobs": True,
+                    "top_logprobs": 20
+                }
+            }
+            f.write(json.dumps(request))
+            f.write("\n")
+
+        return OpenAIBatchSubmitResponse(
+            timestamp=get_timestamp(),
+            answer_raw="",
+            answer=""
+        )
+
+
+class OpenAIBatchRetrieveModelResponse(OpenAIModelResponse):
+    _tokenizer: Encoding
+    _output: any
+    _top_logprobs: list[dict[str, float]]
+
+    def __init__(
+        self,
+        timestamp: str,
+        answer: str,
+        answer_raw: str,
+        output: dict
+    ):
+        super().__init__(timestamp, answer, answer_raw)
+        self._output = output
+        self._tokenizer = tiktoken.get_encoding("cl100k_base")
+        self._top_logprobs = []
+        for token in self._output["choices"][0]["logprobs"]["content"]:
+            self._top_logprobs.append(dict([
+                (top_logprob["token"], float(top_logprob["logprob"]))
+                for top_logprob in token["top_logprobs"]
+            ]))
+
+    def get_answer_prob(self, answer: str) -> float:
+        answer_tokens = [self._tokenizer.decode([token_id]) for token_id in self._tokenizer.encode(answer)]
+        if len(answer_tokens) > len(self._top_logprobs):
+            return 0.0
+
+        answer_logprob = 0.0
+        for answer_token, top_logprob in zip(answer_tokens, self._top_logprobs):
+            if answer_token in top_logprob:
+                answer_logprob += top_logprob[answer_token]
+            else:
+                return 0.0
+
+        return math.exp(answer_logprob)
+
+
+class OpenAIBatchRetrieveModel(LanguageModel):
+    def __init__(self, model_name: str):
+        super().__init__(model_name)
+
+        warnings.warn("Filename MUST be set manually in the OpenAIBatchSubmitModel config!")
+        self._responses = {}
+        with open(MODELS[self._model_name]["input_filepath"], 'r') as f:
+            for line in f:
+                response_json = json.loads(line)
+                self._responses[response_json["id"]] = response_json
+
+    def query(
+        self,
+        prompt: Prompt,
+        max_tokens: int = 256,
+        temperature: float = 0.7,
+        top_p: float = 0.9
+    ) -> LanguageModelResponse:
+        if prompt["id"] not in self._responses:
+            raise ValueError("The given prompt ID is not in the returned responses for the batch!")
+
+        response = self._responses[prompt["id"]]
+        answer_raw = response["choices"][0]["message"]["content"]
+        answer = answer_raw.strip()
+
+        return OpenAIBatchRetrieveModelResponse(
+            timestamp=get_timestamp(),
+            answer_raw=answer_raw,
+            answer=answer,
+            output=response
         )

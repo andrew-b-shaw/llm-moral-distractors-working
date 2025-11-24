@@ -32,6 +32,8 @@ class RedditPrompter(Prompter[Prompt]):
         system_prompt = self._build_system_prompt(question_template["system"], distractor)
         user_prompt = question_template["user"].format(scenario["context"].strip())
         prompt: Prompt = {
+            "id": f"{scenario["id"]}" +
+                  f"_{distractor["id"] if distractor else "none"}",
             "scenario": scenario,
             "distractor": distractor,
             "system_prompt": system_prompt,

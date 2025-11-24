@@ -51,6 +51,10 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
                 context = f"You see the scene in the image. {context}"
 
         prompt: MoralChoicePrompt = {
+            "id": f"{scenario["id"]}" +
+                  f"_{distractor["id"] if distractor else "none"}" +
+                  f"_{question_ordering}" +
+                  f"_{question_format}",
             "scenario": scenario,
             "distractor": distractor,
             "system_prompt": question_template["system"],

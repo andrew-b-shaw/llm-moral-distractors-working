@@ -21,7 +21,6 @@ from src.prompters.reddit_prompter import RedditPrompter
 
 from src.config import PATH_RESULTS, PATH_DISTRACTORS, PATH_HF_CACHE
 
-
 ################################################################################################
 # ARGUMENT PARSER
 ################################################################################################
@@ -106,7 +105,6 @@ datasets_config.USE_DILL_FOR_PICKLING = False
 
 PATH_SCENARIOS = Path(__file__).resolve().parent.parent / "data" / "scenarios"
 
-
 ################################################################################################
 # PROMPTER CREATOR
 ################################################################################################
@@ -143,6 +141,7 @@ DATASETS = {
 
 MoralChoicePrompter = MoralChoicePrompter
 RedditPrompter = RedditPrompter
+
 
 def create_prompter(dataset_name, model, max_tokens, temperature, top_p):
     """Init Models from model_name only"""
@@ -242,6 +241,7 @@ def load_distractors(setting: str) -> Optional[pd.DataFrame]:
         return None
     return distractors
 
+
 def _safe_identifier(series: Optional[pd.Series]) -> str:
     if series is None:
         return "none"
@@ -294,15 +294,14 @@ print(f"[Setup] Sampling params -> temperature={temperature}, top_p={top_p}")
 
 # Creates result folders
 path_model = (
-    PATH_RESULTS
-    / args.experiment_name
-    / f"{args.dataset}_raw"
-    / args.model_name.split("/")[-1]
+        PATH_RESULTS
+        / args.experiment_name
+        / f"{args.dataset}_raw"
+        / args.model_name.split("/")[-1]
 )
 for question_format in question_formats:
     path_model_questiontype = path_model / question_format
     os.makedirs(path_model_questiontype, exist_ok=True)
-
 
 ################################################################################################
 # RUN EVALUATION
@@ -320,6 +319,7 @@ prompter = create_prompter(
     top_p,
 )
 
+
 def run_experiment(scenario_series: pd.Series, distractor_series: Optional[pd.Series]):
     for question_format in question_formats:
         s_id = _safe_identifier(scenario_series)
@@ -333,46 +333,46 @@ def run_experiment(scenario_series: pd.Series, distractor_series: Optional[pd.Se
             continue
 
         success = False
+        tries = 0
+        while not success and tries < 5:
+            try:
+                results = prompter.prompt(
+                    question_format=question_format,
+                    scenario_series=scenario_series,
+                    distractor_series=distractor_series,
+                )
+                success = True  # Set to True to exit the loop on success
+            except ValueError as e:
+                tries += 1
+                print(f"Caught exception: {e}")
+            except Exception as e:
+                tries += 1
+                print(f"Caught an unexpected exception: {e}")
+            finally:
+                if not success:
+                    results = {}
 
-        prompter.prompt_batch(
-            filename=f"{args.model_name.split("/")[-1]}_{args.dataset}.jsonl",
-            question_format=question_format,
-            scenario_series=scenario_series,
-            distractor_series=distractor_series
-        )
-        # while not success:
-        #     try:
-        #         results = prompter.prompt(
-        #             question_format=question_format,
-        #             scenario_series=scenario_series,
-        #             distractor_series=distractor_series,
-        #         )
-        #         success = True  # Set to True to exit the loop on success
-        #     except ValueError as e:
-        #         print(f"Caught exception: {e}")
-        #     except Exception as e:
-        #         print(f"Caught an unexpected exception: {e}")
-        #
-        # with open(result_path, "wb") as f:
-        #     pickle.dump(pd.DataFrame(results), f, protocol=0)
+        with open(result_path, "wb") as f:
+            pickle.dump(pd.DataFrame(results), f, protocol=0)
+
 
 for i_s, scenario_series in tqdm(
-    scenarios.iterrows(),
-    total=len(scenarios),
-    position=0,
-    ncols=100,
-    leave=True,
-    desc=f"Moral Distractors Eval: {model.get_model_id()}",
+        scenarios.iterrows(),
+        total=len(scenarios),
+        position=0,
+        ncols=100,
+        leave=True,
+        desc=f"Moral Distractors Eval: {model.get_model_id()}",
 ):
     run_experiment(scenario_series, None)
 
 if distractors is not None:
     for (i_s, scenario_series), (i_d, distractor_series) in tqdm(
-        itertools.product(scenarios.iterrows(), distractors.iterrows()),
-        total=len(scenarios) * len(distractors),
-        position=0,
-        ncols=100,
-        leave=True,
-        desc=f"Moral Distractors Eval: {model.get_model_id()}",
+            itertools.product(scenarios.iterrows(), distractors.iterrows()),
+            total=len(scenarios) * len(distractors),
+            position=0,
+            ncols=100,
+            leave=True,
+            desc=f"Moral Distractors Eval: {model.get_model_id()}",
     ):
         run_experiment(scenario_series, distractor_series)
