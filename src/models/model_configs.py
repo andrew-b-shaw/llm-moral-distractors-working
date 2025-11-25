@@ -28,7 +28,7 @@ MODELS = {
         "8bit": None,
         "likelihood_access": False,
         "endpoint": "ChatCompletion",
-        "input_filepath": "gpt-4.1-reddit-batch-output.jsonl"  # set manually
+        "input_filepath": "batch_6924b39476c08190970306b73586c965_output.jsonl"  # set manually
     },
     "Qwen/Qwen3-VL-2B-Instruct": {
         "company": "AliBaba",

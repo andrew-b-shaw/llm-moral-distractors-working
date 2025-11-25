@@ -7,7 +7,7 @@ from transformers import AutoModelForImageTextToText, AutoTokenizer, AutoProcess
 from qwen_vl_utils import process_vision_info
 from transformers.generation.utils import GenerateDecoderOnlyOutput
 
-from src.config import PATH_HF_CACHE, PATH_OFFLOAD, PATH_DISTRACTORS
+from src.config import PATH_HF_CACHE, PATH_OFFLOAD, PATH_DATA
 from src.models.model_utils import get_timestamp, get_api_key
 from src.models.models import LanguageModel, MODELS
 from src.models.qwen_model import QwenModelResponse
@@ -68,7 +68,7 @@ class QwenVLModel(LanguageModel):
         ]
 
         if distractor and distractor["modality"] == Modality.IMAGE:
-            image_path = f"{PATH_DISTRACTORS}/{distractor["file_path"]}"
+            image_path = f"{PATH_DATA}/{distractor["file_path"]}"
             image_message = {"type": "image", "image": image_path}
             match distractor["position"]:
                 case Position.BEFORE_SYSTEM:

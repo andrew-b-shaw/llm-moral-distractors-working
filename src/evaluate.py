@@ -19,7 +19,7 @@ from src.models.model_creator import create_model
 from src.prompters.moralchoice_prompter import MoralChoicePrompter
 from src.prompters.reddit_prompter import RedditPrompter
 
-from src.config import PATH_RESULTS, PATH_DISTRACTORS, PATH_HF_CACHE
+from src.config import PATH_RESULTS, PATH_DATA, PATH_HF_CACHE
 
 ################################################################################################
 # ARGUMENT PARSER
@@ -223,7 +223,7 @@ def load_distractors(setting: str) -> Optional[pd.DataFrame]:
     if setting == "none":
         return None
 
-    distractor_path = PATH_DISTRACTORS / "distractors.csv"
+    distractor_path = PATH_DATA / "distractors.csv"
     if not distractor_path.exists():
         raise FileNotFoundError(f"Distractor file not found: {distractor_path}")
 
@@ -318,7 +318,6 @@ prompter = create_prompter(
     temperature,
     top_p,
 )
-
 
 def run_experiment(scenario_series: pd.Series, distractor_series: Optional[pd.Series]):
     for question_format in question_formats:

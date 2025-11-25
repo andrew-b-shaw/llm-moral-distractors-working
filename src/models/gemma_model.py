@@ -7,7 +7,7 @@ from huggingface_hub import login
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoProcessor, GemmaTokenizer, pipeline
 from transformers.generation.utils import GenerateDecoderOnlyOutput
 
-from src.config import PATH_HF_CACHE, PATH_OFFLOAD, PATH_DISTRACTORS
+from src.config import PATH_HF_CACHE, PATH_OFFLOAD, PATH_DATA
 from src.models.model_utils import get_timestamp, get_api_key
 from src.models.models import LanguageModel, MODELS, LanguageModelResponse
 from src.prompters.prompt import Modality, Prompt, Position
@@ -132,7 +132,7 @@ class GemmaModel(LanguageModel):
                     messages[0]["content"].append(image_message)
 
             text_prompt = self._processor.apply_chat_template(messages)
-            image_path = f"{PATH_DISTRACTORS}/{distractor["file_path"]}"
+            image_path = f"{PATH_DATA}/{distractor["file_path"]}"
             image = Image.open(image_path).convert("RGB")
             inputs = self._processor(
                 text=[prompt],

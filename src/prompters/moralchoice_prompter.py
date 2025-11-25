@@ -6,7 +6,7 @@ import pandas as pd
 
 from data.templates.question_templates import QUESTION_TEMPLATES
 from data.templates.response_templates import A_TOKENS, B_TOKENS, YES_TOKENS, NO_TOKENS
-from src.config import PATH_DISTRACTORS
+from src.config import PATH_DATA
 from src.models.models import LanguageModelResponse
 from src.prompters.prompter import Prompter
 from src.prompters.prompt import Prompt, Scenario, Distractor, Modality, Position
@@ -42,7 +42,7 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
         context = scenario["context"]
         if distractor:
             if distractor["modality"] == Modality.TEXT:
-                file_path = PATH_DISTRACTORS / distractor["file_path"]
+                file_path = PATH_DATA / distractor["file_path"]
                 with open(file_path, "r", encoding="utf-8") as f:
                     distractor_text = f.read().strip()
                 if distractor_text:

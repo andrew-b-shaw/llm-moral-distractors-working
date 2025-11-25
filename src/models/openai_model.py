@@ -6,6 +6,8 @@ import time
 import json
 
 from openai import OpenAI, ChatCompletion
+
+from src.config import PATH_DATA
 from src.models.models import LanguageModel, LanguageModelResponse
 from src.models.model_configs import MODELS, API_TIMEOUTS
 from src.models.model_utils import get_timestamp, get_api_key
@@ -127,7 +129,7 @@ class OpenAIBatchSubmitModel(LanguageModel):
         temperature: float = 0.7,
         top_p: float = 0.9
     ) -> LanguageModelResponse:
-        with open(MODELS[self._model_name]["output_filepath"], 'a') as f:
+        with open(PATH_DATA / MODELS[self._model_name]["output_filepath"], 'a') as f:
             request = {
                 "custom_id": prompt["id"],
                 "method": "POST",
@@ -198,7 +200,7 @@ class OpenAIBatchRetrieveModel(LanguageModel):
 
         warnings.warn("Filename MUST be set manually in the OpenAIBatchSubmitModel config!")
         self._responses = {}
-        with open(MODELS[self._model_name]["input_filepath"], 'r') as f:
+        with open(PATH_DATA / MODELS[self._model_name]["input_filepath"], "r") as f:
             for line in f:
                 response_json = json.loads(line)
                 self._responses[response_json["id"]] = response_json
