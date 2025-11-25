@@ -4,6 +4,7 @@ import warnings
 import tiktoken
 import time
 import json
+import orjson
 
 from openai import OpenAI, ChatCompletion
 
@@ -202,7 +203,7 @@ class OpenAIBatchRetrieveModel(LanguageModel):
         self._responses = {}
         with open(PATH_DATA / MODELS[self._model_name]["input_filepath"], "r") as f:
             for line in f:
-                response_json = json.loads(line)
+                response_json = orjson.loads(line)
                 self._responses[response_json["id"]] = response_json
 
     def query(
