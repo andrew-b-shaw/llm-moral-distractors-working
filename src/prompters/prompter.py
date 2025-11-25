@@ -95,8 +95,8 @@ class Prompter(Generic[AnyPrompt]):
             responses.append(response)
 
         # Post-process responses
-        # results = []
-        # for prompt, response in zip(prompts, responses):
-        #     result = self.post_process(prompt, response)
-        #     results.append(result)
-        # return results
+        results = []
+        for prompt, response in zip(prompts, responses):
+            result = self.post_process(prompt, response)
+            results.append(result)
+        return results
