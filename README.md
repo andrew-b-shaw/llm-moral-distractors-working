@@ -1,9 +1,7 @@
 # llm_moral_plasticity
 
 ## Research Question:
-Are the “moral values” of LLMs robust to morally irrelevant situational distractors? We investigate this question as part of our CSE 481M Natural Language Processing Capstone project. This repository serves as a platform to reproduce our results.
-
-![image](https://github.com/user-attachments/assets/9d9c3c53-c526-4755-8b58-a1e8e0ec6d89)
+Are the moral judgements of LLMs robust to morally irrelevant situational distractors? We investigate this question as part of our paper for CSE 599 J1, "Moral Distrators for LLMs." This repository contains the code and data used to run our experiments.
 
 
 ## Useful Commands
