@@ -103,17 +103,22 @@ class LlamaModel(LanguageModel):
             if distractor["modality"] == Modality.IMAGE:
                 raise ValueError("This model does not support image inputs!")
 
-        messages = [
-            {"role": "system", "content": prompt["system_prompt"]},
-            {"role": "user", "content": prompt["user_prompt"]}
-        ]
-        text_prompt = self._tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True,
-        )
+        if self._tokenizer.chat_template is not None:
+            messages = [
+                {"role": "system", "content": prompt["system_prompt"]},
+                {"role": "user", "content": prompt["user_prompt"]}
+            ]
+            text_prompt = self._tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True
+            )
+        else:
+            # Backup if no chat template exists
+            text_prompt = prompt["system_prompt"] + " " + prompt["user_prompt"]
+
         inputs = self._tokenizer(
-            text=[text_prompt],
+            text=text_prompt,
             return_tensors="pt"
         ).to(self._device)
 

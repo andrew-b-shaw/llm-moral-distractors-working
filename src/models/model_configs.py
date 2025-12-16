@@ -54,6 +54,22 @@ MODELS = {
         "likelihood_access": True,
         "endpoint": None
     },
+    "Qwen/Qwen3-1.7B": {
+        "company": "AliBaba",
+        "model_class": "QwenModel",
+        "model_name": "Qwen/Qwen3-1.7B",
+        "8bit": False,
+        "likelihood_access": True,
+        "endpoint": None
+    },
+    "Qwen/Qwen3-0.6B": {
+        "company": "AliBaba",
+        "model_class": "QwenModel",
+        "model_name": "Qwen/Qwen3-0.6B",
+        "8bit": False,
+        "likelihood_access": True,
+        "endpoint": None
+    },
     "google/gemma-3-270m-pt": {
         "company": "google",
         "model_class": "GemmaModel",
@@ -147,6 +163,14 @@ MODELS = {
         "company": "Meta",
         "model_class": "LlamaModel",
         "model_name": "meta-llama/Llama-3.2-3B-Instruct",
+        "8bit": False,
+        "likelihood_access": True,
+        "endpoint": None
+    },
+    "meta-llama/Llama-3.2-3B": {
+        "company": "Meta",
+        "model_class": "LlamaModel",
+        "model_name": "meta-llama/Llama-3.2-3B",
         "8bit": False,
         "likelihood_access": True,
         "endpoint": None

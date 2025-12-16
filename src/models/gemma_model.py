@@ -135,17 +135,20 @@ class GemmaModel(LanguageModel):
             image_path = f"{PATH_DATA}/{distractor["file_path"]}"
             image = Image.open(image_path).convert("RGB")
             inputs = self._processor(
-                text=[prompt],
+                text=[text_prompt],
                 images=[image],
                 return_tensors="pt"
             ).to(self._device)
         else:
-            text_prompt = self._tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True,
-                enable_thinking=True
-            )
+            if self._tokenizer.chat_template is not None:
+                text_prompt = self._tokenizer.apply_chat_template(
+                    messages,
+                    tokenize=False,
+                    add_generation_prompt=True
+                )
+            else:
+                # Backup if no chat template exists
+                text_prompt = prompt["system_prompt"] + " " + prompt["user_prompt"]
             inputs = self._tokenizer(
                 text=text_prompt,
                 return_tensors="pt"
@@ -165,7 +168,7 @@ class GemmaModel(LanguageModel):
             )
 
         answer_raw = self._tokenizer.decode(output.sequences[0], skip_special_tokens=True)
-        answer = answer_raw[answer_raw.rfind("model") + len("model"):].strip()
+        answer = answer_raw[answer_raw.rfind("Answer:") + len("Answer:"):].strip()
 
         return GemmaModelResponse(
             timestamp=get_timestamp(),
