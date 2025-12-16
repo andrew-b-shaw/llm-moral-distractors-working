@@ -29,10 +29,10 @@ img_pos_7,positive,img_distractor_data/positive/Lake 12.jpg,image
 img_pos_8,positive,img_distractor_data/positive/Lake 14.jpg,image
 img_pos_9,positive,img_distractor_data/positive/Lake 15.jpg,image
 img_pos_10,positive,img_distractor_data/positive/Lake 2.jpg,image
-txt_neg_1,negative,text_distractor_data/negative/FR71.txt,text
+txt_neg_1,negative,text_distractor_data/negative/FI21.txt,text
 txt_neg_2,negative,text_distractor_data/negative/G350.txt,text
 txt_neg_3,negative,text_distractor_data/negative/T006.txt,text
-txt_neg_4,negative,text_distractor_data/negative/T005.txt,text
+txt_neg_4,negative,text_distractor_data/negative/SP022.txt,text
 txt_neg_5,negative,text_distractor_data/negative/FI17.txt,text
 txt_neg_6,negative,text_distractor_data/negative/P19.txt,text
 txt_neg_7,negative,text_distractor_data/negative/T020.txt,text
