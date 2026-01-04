@@ -1,0 +1,23 @@
+Moral foundation Kruskal–Wallis tests
+
+                           model           foundation      H      p  p_adj
+            google/gemma-3-4b-it            Care/Harm 1.3771 0.7109    1.0
+            google/gemma-3-4b-it    Fairness/Cheating 1.4131 0.7025    1.0
+            google/gemma-3-4b-it     Loyalty/Betrayal 2.5781 0.4613    1.0
+            google/gemma-3-4b-it Authority/Subversion 2.8718 0.4118    1.0
+            google/gemma-3-4b-it   Purity/Degradation 0.4718 0.9250    1.0
+meta-llama/Llama-3.2-3B-Instruct            Care/Harm 3.6767 0.2986    1.0
+meta-llama/Llama-3.2-3B-Instruct    Fairness/Cheating 6.8387 0.0772    1.0
+meta-llama/Llama-3.2-3B-Instruct     Loyalty/Betrayal 2.5056 0.4743    1.0
+meta-llama/Llama-3.2-3B-Instruct Authority/Subversion 0.4515 0.9294    1.0
+meta-llama/Llama-3.2-3B-Instruct   Purity/Degradation 0.3304 0.9542    1.0
+   openai/gpt-4.1-batch-retrieve            Care/Harm 2.8837 0.4099    1.0
+   openai/gpt-4.1-batch-retrieve    Fairness/Cheating 1.9528 0.5823    1.0
+   openai/gpt-4.1-batch-retrieve     Loyalty/Betrayal 2.8141 0.4212    1.0
+   openai/gpt-4.1-batch-retrieve Authority/Subversion 1.7638 0.6228    1.0
+   openai/gpt-4.1-batch-retrieve   Purity/Degradation 6.0335 0.1100    1.0
+                   Qwen/Qwen3-4B            Care/Harm 2.7484 0.4321    1.0
+                   Qwen/Qwen3-4B    Fairness/Cheating 1.5895 0.6618    1.0
+                   Qwen/Qwen3-4B     Loyalty/Betrayal 0.5720 0.9028    1.0
+                   Qwen/Qwen3-4B Authority/Subversion 1.0520 0.7887    1.0
+                   Qwen/Qwen3-4B   Purity/Degradation 1.7021 0.6365    1.0

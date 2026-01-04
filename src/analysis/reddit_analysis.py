@@ -20,6 +20,10 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+from scipy.stats import chi2_contingency, kruskal
+from statsmodels.stats.proportion import proportions_ztest, proportion_confint
+from statsmodels.stats.multitest import multipletests
+
 MORAL_COLS = ["ch_score", "fc_score", "lb_score", "as_score", "pd_score"]
 VERDICT_PALETTE = {
     "YTA": "#4c78a8",   # slate blue
@@ -361,6 +365,195 @@ def describe_esh_spike(counts: pd.DataFrame) -> pd.DataFrame:
     )
     return pivot
 
+def esh_significance_tests(df: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
+    rows = []
+
+    for model in df["model"].unique():
+        sub = df[df["model"] == model]
+
+        base = sub[sub["distractor_type"] == "baseline"]
+        n0 = len(base)
+        k0 = (base["verdict"] == "ESH").sum()
+
+        for dtype in ["neg", "neu", "pos"]:
+            comp = sub[sub["distractor_type"] == dtype]
+            if comp.empty:
+                continue
+
+            n1 = len(comp)
+            k1 = (comp["verdict"] == "ESH").sum()
+
+            z, p = proportions_ztest([k1, k0], [n1, n0])
+
+            rows.append({
+                "model": model,
+                "comparison": f"{dtype} vs baseline",
+                "esh_baseline": k0 / n0 if n0 else np.nan,
+                "esh_comp": k1 / n1 if n1 else np.nan,
+                "delta": (k1 / n1) - (k0 / n0),
+                "z": z,
+                "p": p,
+            })
+
+    res = pd.DataFrame(rows)
+    res["p_adj"] = multipletests(res["p"], method="holm")[1]
+
+    print("\n=== ESH proportion tests (Holm corrected) ===")
+    print(res.round(4).to_string(index=False))
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    res.to_csv(out_dir / "esh_tests.csv", index=False)
+    with open(out_dir / "esh_tests.txt", "w") as f:
+        f.write("ESH proportion tests (baseline vs distractors)\n\n")
+        f.write(res.round(4).to_string(index=False))
+
+    return res
+
+def plot_esh_with_ci(df: pd.DataFrame, out_path: Path) -> None:
+    rows = []
+    for (model, dtype), g in df.groupby(["model", "distractor_type"]):
+        n = len(g)
+        k = (g["verdict"] == "ESH").sum()
+        lo, hi = proportion_confint(k, n, method="wilson")
+
+        rows.append({
+            "model": model,
+            "distractor_type": dtype,
+            "share": k / n,
+            "ci_lo": lo,
+            "ci_hi": hi,
+        })
+
+    plot_df = pd.DataFrame(rows)
+
+    sns.set_theme(style="whitegrid")
+    plt.figure(figsize=(8, 4.5))
+    ax = sns.barplot(
+        data=plot_df,
+        x="distractor_type",
+        y="share",
+        hue="model",
+        errorbar=None,
+    )
+
+    for bar, (_, row) in zip(ax.patches, plot_df.iterrows()):
+        x = bar.get_x() + bar.get_width() / 2
+        y = bar.get_height()
+        lo = max(0.0, y - row["ci_lo"])
+        hi = max(0.0, row["ci_hi"] - y)
+
+        ax.errorbar(
+            x=x,
+            y=y,
+            yerr=[[lo], [hi]],
+            fmt="none",
+            color="black",
+            capsize=3,
+            linewidth=1,
+        )
+
+    ax.set_title("ESH rate by distractor polarity (95% Wilson CI)")
+    ax.set_ylabel("Proportion ESH")
+    ax.set_ylim(0, plot_df["ci_hi"].max() * 1.15)
+
+    plt.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(out_path, dpi=300)
+    plt.close()
+
+def verdict_chi_square_tests(df: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
+    rows = []
+
+    for model in df["model"].unique():
+        table = (
+            df[df["model"] == model]
+            .pivot_table(
+                index="distractor_type",
+                columns="verdict",
+                aggfunc="size",
+                fill_value=0,
+            )
+        )
+
+        chi2, p, dof, _ = chi2_contingency(table)
+
+        rows.append({
+            "model": model,
+            "chi2": chi2,
+            "dof": dof,
+            "p": p,
+        })
+
+    res = pd.DataFrame(rows)
+    res["p_adj"] = multipletests(res["p"], method="holm")[1]
+
+    print("\n=== Verdict × Distractor χ² tests ===")
+    print(res.round(4).to_string(index=False))
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    res.to_csv(out_dir / "verdict_chi2.csv", index=False)
+    with open(out_dir / "verdict_chi2.txt", "w", encoding="utf-8") as f:
+        f.write("Verdict × Distractor χ² tests\n\n")
+        f.write(res.round(4).to_string(index=False))
+
+    return res
+
+
+def plot_verdict_significance_heatmap(stats: pd.DataFrame, out_path: Path) -> None:
+    stats = stats.copy()
+    stats["-log10(p)"] = -np.log10(stats["p_adj"])
+
+    sns.set_theme(style="white")
+    plt.figure(figsize=(6, 3))
+    sns.heatmap(
+        stats.set_index("model")[["-log10(p)"]],
+        annot=True,
+        cmap="magma",
+        cbar_kws={"label": "-log10(p)"},
+    )
+    plt.title("Verdict × Distractor dependence")
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=300)
+    plt.close()
+
+def foundation_kruskal_tests(df: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
+    rows = []
+
+    for model in df["model"].unique():
+        sub = df[df["model"] == model]
+
+        for col in MORAL_COLS:
+            groups = [
+                g[col].dropna().values
+                for _, g in sub.groupby("distractor_type")
+                if len(g[col].dropna()) > 0
+            ]
+
+            if len(groups) < 2:
+                continue
+
+            h, p = kruskal(*groups)
+
+            rows.append({
+                "model": model,
+                "foundation": FOUNDATION_LABELS[col],
+                "H": h,
+                "p": p,
+            })
+
+    res = pd.DataFrame(rows)
+    res["p_adj"] = multipletests(res["p"], method="holm")[1]
+
+    print("\n=== Moral foundation Kruskal–Wallis tests ===")
+    print(res.round(4).to_string(index=False))
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    res.to_csv(out_dir / "foundation_kw.csv", index=False)
+    with open(out_dir / "foundation_kw.txt", "w") as f:
+        f.write("Moral foundation Kruskal–Wallis tests\n\n")
+        f.write(res.round(4).to_string(index=False))
+
+    return res
 
 def main() -> None:
     root = repo_root()
@@ -406,6 +599,17 @@ def main() -> None:
 
     verdict_spider_dir = fig_dir / "verdict_spiders"
     plot_verdict_spider_by_model(verdict_share_table, verdict_spider_dir)
+    
+    stats_dir = fig_dir / "stats"
+
+    esh_stats = esh_significance_tests(df, stats_dir)
+    plot_esh_with_ci(df, stats_dir / "esh_with_ci.png")
+
+    verdict_chi_square_tests(df, stats_dir)
+    foundation_kruskal_tests(df, stats_dir)
+
+    # foundation_stats = foundation_tests(df)
+    # foundation_stats.to_csv(stats_dir / "foundation_significance.csv", index=False)
 
     print("=== ESH share by distractor polarity ===")
     print(esh_table.round(3))
@@ -417,7 +621,6 @@ def main() -> None:
         .to_string(index=False)
     )
     print("\nPlots saved to:", fig_dir.resolve())
-
-
+    
 if __name__ == "__main__":
     main()
