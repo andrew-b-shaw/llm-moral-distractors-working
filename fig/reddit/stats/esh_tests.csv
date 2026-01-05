@@ -1,4 +1,4 @@
-model,comparison,esh_baseline,esh_comp,delta,z,p,p_adj
+model,comparison,baseline,comp,delta,z,p,p_adj
 google/gemma-3-4b-it,neg vs baseline,0.0,0.0852,0.0852,4.805027914565701,1.5472991567490781e-06,1.8567589880988938e-05
 google/gemma-3-4b-it,neu vs baseline,0.0,0.0296,0.0296,2.7576500470081093,0.005821848743084993,0.05239663868776494
 google/gemma-3-4b-it,pos vs baseline,0.0,0.0072,0.0072,1.3460532840980104,0.17828533302881855,0.6125469864469523
