@@ -88,9 +88,9 @@ def esh_share_by_distractor(df: pd.DataFrame) -> pd.DataFrame:
     return counts
 
 
-def plot_esh_spike(counts: pd.DataFrame, out_path: Path) -> None:
+def plot_esh_spike(counts: pd.DataFrame, out_path: Path, verdict: str) -> None:
     """Plot ESH rate by distractor type per model."""
-    esh = counts[counts["verdict"] == "ESH"].copy()
+    esh = counts[counts["verdict"] == verdict].copy()
     sns.set_theme(style="whitegrid")
     plt.figure(figsize=(8, 4.5))
     ax = sns.barplot(
@@ -99,9 +99,9 @@ def plot_esh_spike(counts: pd.DataFrame, out_path: Path) -> None:
         y="share",
         hue="model",
     )
-    ax.set_title("ESH share by distractor polarity")
+    ax.set_title(f"{verdict} share by distractor polarity")
     ax.set_xlabel("Distractor polarity")
-    ax.set_ylabel("Proportion of responses labeled ESH")
+    ax.set_ylabel(f"Proportion of responses labeled {verdict}")
     ax.set_ylim(0, esh["share"].max() * 1.15 if not esh.empty else 1)
     plt.legend(title="Model")
     plt.tight_layout()
@@ -263,6 +263,8 @@ def plot_delta_vs_baseline(shares: pd.DataFrame, out_path: Path) -> None:
     merged["delta"] = merged["share"] - merged["share_base"]
 
     sns.set_theme(style="whitegrid")
+    distractor_order = ["pos", "neu", "neg"]
+
     g = sns.catplot(
         data=merged,
         kind="bar",
@@ -274,6 +276,7 @@ def plot_delta_vs_baseline(shares: pd.DataFrame, out_path: Path) -> None:
         col_wrap=2,
         height=4.2,
         sharey=False,
+        hue_order=distractor_order
     )
     g.set_titles("{col_name}")
     g.set_axis_labels("Verdict", "Δ share vs baseline")
@@ -354,9 +357,9 @@ def plot_spider(
     plt.close()
 
 
-def describe_esh_spike(counts: pd.DataFrame) -> pd.DataFrame:
+def describe_esh_spike(counts: pd.DataFrame, verdict: str) -> pd.DataFrame:
     """Return a tidy table of ESH shares per distractor type for printing."""
-    esh = counts[counts["verdict"] == "ESH"].copy()
+    esh = counts[counts["verdict"] == verdict].copy()
     pivot = esh.pivot_table(
         index="model",
         columns="distractor_type",
@@ -365,7 +368,7 @@ def describe_esh_spike(counts: pd.DataFrame) -> pd.DataFrame:
     )
     return pivot
 
-def esh_significance_tests(df: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
+def esh_significance_tests(df: pd.DataFrame, out_dir: Path, verdict: str) -> pd.DataFrame:
     rows = []
 
     for model in df["model"].unique():
@@ -373,7 +376,7 @@ def esh_significance_tests(df: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
 
         base = sub[sub["distractor_type"] == "baseline"]
         n0 = len(base)
-        k0 = (base["verdict"] == "ESH").sum()
+        k0 = (base["verdict"] == verdict).sum()
 
         for dtype in ["neg", "neu", "pos"]:
             comp = sub[sub["distractor_type"] == dtype]
@@ -381,15 +384,15 @@ def esh_significance_tests(df: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
                 continue
 
             n1 = len(comp)
-            k1 = (comp["verdict"] == "ESH").sum()
+            k1 = (comp["verdict"] == verdict).sum()
 
             z, p = proportions_ztest([k1, k0], [n1, n0])
 
             rows.append({
                 "model": model,
                 "comparison": f"{dtype} vs baseline",
-                "esh_baseline": k0 / n0 if n0 else np.nan,
-                "esh_comp": k1 / n1 if n1 else np.nan,
+                "baseline": k0 / n0 if n0 else np.nan,
+                "comp": k1 / n1 if n1 else np.nan,
                 "delta": (k1 / n1) - (k0 / n0),
                 "z": z,
                 "p": p,
@@ -398,22 +401,22 @@ def esh_significance_tests(df: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
     res = pd.DataFrame(rows)
     res["p_adj"] = multipletests(res["p"], method="holm")[1]
 
-    print("\n=== ESH proportion tests (Holm corrected) ===")
+    print(f"\n=== {verdict} proportion tests (Holm corrected) ===")
     print(res.round(4).to_string(index=False))
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    res.to_csv(out_dir / "esh_tests.csv", index=False)
-    with open(out_dir / "esh_tests.txt", "w") as f:
-        f.write("ESH proportion tests (baseline vs distractors)\n\n")
+    res.to_csv(out_dir / f"{verdict}_tests.csv", index=False)
+    with open(out_dir / f"{verdict}_tests.txt", "w") as f:
+        f.write(f"{verdict} proportion tests (baseline vs distractors)\n\n")
         f.write(res.round(4).to_string(index=False))
 
     return res
 
-def plot_esh_with_ci(df: pd.DataFrame, out_path: Path) -> None:
+def plot_esh_with_ci(df: pd.DataFrame, out_path: Path, verdict: str) -> None:
     rows = []
     for (model, dtype), g in df.groupby(["model", "distractor_type"]):
         n = len(g)
-        k = (g["verdict"] == "ESH").sum()
+        k = (g["verdict"] == verdict).sum()
         lo, hi = proportion_confint(k, n, method="wilson")
 
         rows.append({
@@ -452,8 +455,8 @@ def plot_esh_with_ci(df: pd.DataFrame, out_path: Path) -> None:
             linewidth=1,
         )
 
-    ax.set_title("ESH rate by distractor polarity (95% Wilson CI)")
-    ax.set_ylabel("Proportion ESH")
+    ax.set_title(f"{verdict} rate by distractor polarity (95% Wilson CI)")
+    ax.set_ylabel(f"Proportion {verdict}")
     ax.set_ylim(0, plot_df["ci_hi"].max() * 1.15)
 
     plt.tight_layout()
@@ -556,6 +559,7 @@ def foundation_kruskal_tests(df: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
     return res
 
 def main() -> None:
+    verdict = 'NTA'
     root = repo_root()
     data_dir = root / "src/analysis/reddit_csvs"
     fig_dir = root / "fig/reddit"
@@ -564,7 +568,7 @@ def main() -> None:
     df = add_top_foundation(df)
 
     counts = esh_share_by_distractor(df)
-    esh_table = describe_esh_spike(counts)
+    esh_table = describe_esh_spike(counts, verdict)
 
     verdict_share_table = verdict_shares(df)
 
@@ -579,7 +583,7 @@ def main() -> None:
     plot_foundation_bars(df, foundation_bar_path)
 
     esh_plot_path = fig_dir / "esh_by_distractor.png"
-    plot_esh_spike(counts, esh_plot_path)
+    plot_esh_spike(counts, esh_plot_path, verdict)
 
     averages = df.groupby("model")[MORAL_COLS].mean()
     spider_path = fig_dir / "moral_foundation_spider.png"
@@ -602,8 +606,8 @@ def main() -> None:
     
     stats_dir = fig_dir / "stats"
 
-    esh_stats = esh_significance_tests(df, stats_dir)
-    plot_esh_with_ci(df, stats_dir / "esh_with_ci.png")
+    esh_stats = esh_significance_tests(df, stats_dir, verdict)
+    plot_esh_with_ci(df, stats_dir / "esh_with_ci.png", verdict)
 
     verdict_chi_square_tests(df, stats_dir)
     foundation_kruskal_tests(df, stats_dir)
@@ -611,7 +615,7 @@ def main() -> None:
     # foundation_stats = foundation_tests(df)
     # foundation_stats.to_csv(stats_dir / "foundation_significance.csv", index=False)
 
-    print("=== ESH share by distractor polarity ===")
+    print(f"=== {verdict} share by distractor polarity ===")
     print(esh_table.round(3))
     print("\n=== Verdict shares by distractor polarity (head) ===")
     print(
