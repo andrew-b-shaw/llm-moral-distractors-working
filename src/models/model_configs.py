@@ -19,7 +19,7 @@ MODELS = {
         "8bit": None,
         "likelihood_access": False,
         "endpoint": "ChatCompletion",
-        "output_filepath": "gpt-4.1-reddit-batch.jsonl"  # set manually
+        "output_filepath": "gpt-4.1-normbank-batch-submit.jsonl"  # set manually
     },
     "openai/gpt-4.1-batch-retrieve": {
         "company": "openai",

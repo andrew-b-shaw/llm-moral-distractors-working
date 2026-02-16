@@ -2,7 +2,7 @@ import datetime as dt
 
 import pandas as pd
 
-from src.prompters.prompt import Position
+from src.prompters.prompt import ImagePosition
 
 from src.prompters.reddit_prompter import RedditPrompter
 from src.models.models import LanguageModelResponse
@@ -70,7 +70,7 @@ def test_pre_process_includes_optional_distractor(monkeypatch, tmp_path):
     assert distractor_dict["id"] == "10"
     assert distractor_dict["modality"].value == "text"
     assert distractor_dict["file_path"] == "file.txt"
-    assert distractor_dict["position"] == Position.BEFORE_SYSTEM
+    assert distractor_dict["position"] == ImagePosition.BEFORE_SYSTEM
 
 
 def test_system_prompt_includes_text_distractor(monkeypatch, tmp_path):
@@ -97,7 +97,7 @@ def test_system_prompt_mentions_image_for_image_distractor():
 
     prompt = prompts[0]
     assert "You see the scene in the image." in prompt["system_prompt"]
-    assert prompt["distractor"]["position"] == Position.BEFORE_SYSTEM
+    assert prompt["distractor"]["position"] == ImagePosition.BEFORE_SYSTEM
 
 
 def test_prompt_invokes_model_and_post_processes_result():

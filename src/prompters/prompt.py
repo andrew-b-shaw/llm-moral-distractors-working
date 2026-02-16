@@ -9,7 +9,7 @@ except ImportError:  # pragma: no cover
         pass
 
 
-class Position(StrEnum):
+class ImagePosition(StrEnum):
     BEFORE_SYSTEM = "before_system"
     AFTER_SYSTEM = "after_system"
     BEFORE_USER = "before_user"
@@ -25,7 +25,7 @@ class Distractor(TypedDict):
     id: str
     modality: Modality
     file_path: str
-    position: Position
+    position: ImagePosition
 
 
 class Scenario(TypedDict):

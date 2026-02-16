@@ -1,7 +1,7 @@
 import pytest
 
 from src.models.ollama_model import OllamaModel
-from src.prompters.prompt import Modality, Position
+from src.prompters.prompt import Modality, ImagePosition
 
 
 class DummyResponse:
@@ -34,7 +34,7 @@ def test_ollama_query_builds_request_payload(monkeypatch):
             "id": "test",
             "modality": Modality.TEXT,
             "file_path": "unused.txt",
-            "position": Position.BEFORE_SYSTEM
+            "position": ImagePosition.BEFORE_SYSTEM
         },
         "system_prompt": "You are a helper.",
         "user_prompt": "Evaluate this situation."
@@ -62,7 +62,7 @@ def test_ollama_query_raises_for_image_distractor(monkeypatch):
             "id": "img",
             "modality": Modality.IMAGE,
             "file_path": "some.png",
-            "position": Position.BEFORE_SYSTEM
+            "position": ImagePosition.BEFORE_SYSTEM
         },
         "system_prompt": "System",
         "user_prompt": "User"

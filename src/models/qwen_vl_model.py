@@ -11,7 +11,7 @@ from src.config import PATH_HF_CACHE, PATH_OFFLOAD, PATH_DATA
 from src.models.model_utils import get_timestamp, get_api_key
 from src.models.models import LanguageModel, MODELS
 from src.models.qwen_model import QwenModelResponse
-from src.prompters.prompt import Modality, Prompt, Position
+from src.prompters.prompt import Modality, Prompt, ImagePosition
 
 
 class QwenVLModel(LanguageModel):
@@ -71,11 +71,11 @@ class QwenVLModel(LanguageModel):
             image_path = f"{PATH_DATA}/{distractor["file_path"]}"
             image_message = {"type": "image", "image": image_path}
             match distractor["position"]:
-                case Position.BEFORE_SYSTEM:
+                case ImagePosition.BEFORE_SYSTEM:
                     messages[0]["content"].insert(0, image_message)
-                case Position.AFTER_SYSTEM:
+                case ImagePosition.AFTER_SYSTEM:
                     messages[0]["content"].append(image_message)
-                case Position.BEFORE_USER:
+                case ImagePosition.BEFORE_USER:
                     messages[1]["content"].insert(0, image_message)
                 case _:
                     messages[1]["content"].append(image_message)

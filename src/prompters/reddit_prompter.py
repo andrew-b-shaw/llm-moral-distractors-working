@@ -9,7 +9,7 @@ from src.classifier import ME2BERTScorer
 from src.config import PATH_DATA
 from src.models.models import LanguageModelResponse, LanguageModel
 from src.prompters.prompter import Prompter
-from src.prompters.prompt import Prompt, Scenario, Distractor, Modality, Position
+from src.prompters.prompt import Prompt, Scenario, Distractor, Modality, ImagePosition
 
 
 class RedditPrompter(Prompter[Prompt]):
@@ -52,7 +52,7 @@ class RedditPrompter(Prompter[Prompt]):
         distractor: Distractor | None = None
         if distractor_series is not None:
             modality = Modality(distractor_series["modality"])
-            position = Position.BEFORE_SYSTEM
+            position = ImagePosition.BEFORE_SYSTEM
             distractor = {
                 "id": str(distractor_series.get("id", distractor_series.get("distractor_id", ""))),
                 "modality": modality,

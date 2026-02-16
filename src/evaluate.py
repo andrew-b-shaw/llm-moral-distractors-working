@@ -18,6 +18,8 @@ from huggingface_hub import hf_hub_download
 from src.models.model_creator import create_model
 from src.prompters.moralchoice_prompter import MoralChoicePrompter
 from src.prompters.reddit_prompter import RedditPrompter
+from src.prompters.normbank_prompter import NormBankPrompter
+from src.prompters.normbank_batch_submit_prompter import NormBankBatchSubmitPrompter
 
 from src.config import PATH_RESULTS, PATH_DATA, PATH_HF_CACHE
 
@@ -134,6 +136,24 @@ DATASETS = {
         "supports_distractors": True,
         "hf_dataset_name": "ucberkeley-dlab/normative_evaluation_llms_everyday_dilemmas",
         "hf_dataset_file": "normative_evaluation_everyday_dilemmas_dataset.csv",
+        "default_temperature": 0.2,
+        "default_top_p": 1.0,
+    },
+    "normbank": {
+        "prompter_class": "NormBankPrompter",
+        "scenario_loader": "csv",
+        "scenario_path": PATH_SCENARIOS / "normbank.csv",
+        "default_question_formats": ["normbank"],
+        "supports_distractors": True,
+        "default_temperature": 0.2,
+        "default_top_p": 1.0,
+    },
+    "normbank_batch_submit": {
+        "prompter_class": "NormBankBatchSubmitPrompter",
+        "scenario_loader": "csv",
+        "scenario_path": PATH_SCENARIOS / "normbank.csv",
+        "default_question_formats": ["normbank"],
+        "supports_distractors": True,
         "default_temperature": 0.2,
         "default_top_p": 1.0,
     },

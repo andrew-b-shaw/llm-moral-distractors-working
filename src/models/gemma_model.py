@@ -10,7 +10,7 @@ from transformers.generation.utils import GenerateDecoderOnlyOutput
 from src.config import PATH_HF_CACHE, PATH_OFFLOAD, PATH_DATA
 from src.models.model_utils import get_timestamp, get_api_key
 from src.models.models import LanguageModel, MODELS, LanguageModelResponse
-from src.prompters.prompt import Modality, Prompt, Position
+from src.prompters.prompt import Modality, Prompt, ImagePosition
 
 
 class GemmaModelResponse(LanguageModelResponse):
@@ -122,11 +122,11 @@ class GemmaModel(LanguageModel):
 
             image_message = {"type": "image"}
             match distractor["position"]:
-                case Position.BEFORE_SYSTEM:
+                case ImagePosition.BEFORE_SYSTEM:
                     messages[0]["content"].insert(0, image_message)
-                case Position.AFTER_SYSTEM:
+                case ImagePosition.AFTER_SYSTEM:
                     messages[0]["content"].insert(1, image_message)
-                case Position.BEFORE_USER:
+                case ImagePosition.BEFORE_USER:
                     messages[0]["content"].insert(1, image_message)
                 case _:
                     messages[0]["content"].append(image_message)

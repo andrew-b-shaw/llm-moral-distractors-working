@@ -33,10 +33,10 @@ VERDICT_PALETTE = {
     "INFO": "#8c564b",  # taupe
 }
 DISTRACTOR_PALETTE = {
-    "baseline": "#7f7f7f",   # gray
-    "pos": "#009900",        # bright green
-    "neu": "#f4a300",        # orange/yellow
-    "neg": "#e50000",        # red
+    "baseline": "blue",   # gray
+    "pos": "green",        # bright green
+    "neu": "orange",        # orange/yellow
+    "neg": "red",        # red
 }
 FOUNDATION_LABELS = {
     "ch_score": "Care/Harm",
@@ -561,7 +561,7 @@ def foundation_kruskal_tests(df: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
 def main() -> None:
     verdict = 'NTA'
     root = repo_root()
-    data_dir = root / "src/analysis/reddit_csvs"
+    data_dir = root / "data/csv_results/main/reddit"
     fig_dir = root / "fig/reddit"
 
     df = load_reddit_frames(data_dir)
