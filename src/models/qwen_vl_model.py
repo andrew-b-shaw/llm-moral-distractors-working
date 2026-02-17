@@ -9,7 +9,7 @@ from transformers.generation.utils import GenerateDecoderOnlyOutput
 
 from src.config import PATH_HF_CACHE, PATH_OFFLOAD, PATH_DATA
 from src.models.model_utils import get_timestamp, get_api_key
-from src.models.models import LanguageModel, MODELS
+from src.models.model import LanguageModel, MODELS
 from src.models.qwen_model import QwenModelResponse
 from src.prompters.prompt import Modality, Prompt, ImagePosition
 

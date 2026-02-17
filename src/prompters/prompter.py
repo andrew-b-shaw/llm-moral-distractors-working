@@ -5,7 +5,7 @@ import pandas as pd
 from abc import abstractmethod
 from typing import TypeVar, Generic
 
-from src.models.models import LanguageModel, LanguageModelResponse
+from src.models.model import LanguageModel, LanguageModelResponse
 from src.prompters.prompt import Prompt
 
 AnyPrompt = TypeVar("AnyPrompt", bound=Prompt)

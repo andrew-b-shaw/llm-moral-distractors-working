@@ -7,7 +7,7 @@ from typing import Any
 import requests
 
 from src.models.model_utils import get_timestamp
-from src.models.models import MODELS, LanguageModel, LanguageModelResponse
+from src.models.model import MODELS, LanguageModel, LanguageModelResponse
 from src.prompters.prompt import Modality, Prompt
 
 

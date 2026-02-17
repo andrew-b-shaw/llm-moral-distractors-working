@@ -49,7 +49,7 @@ parser.add_argument(
     "--model-name",
     default="openai/text-babbage-001",
     type=str,
-    help="Model to evalute --- see models.py for an overview of supported models",
+    help="Model to evalute --- see model.py for an overview of supported models",
 )
 parser.add_argument(
     "--question-formats",

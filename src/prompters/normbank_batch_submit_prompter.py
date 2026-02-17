@@ -1,5 +1,5 @@
 from __future__ import annotations
-from src.models.models import LanguageModelResponse
+from src.models.model import LanguageModelResponse
 from src.prompters.normbank_prompter import NormBankPrompter
 from src.prompters.prompt import Prompt
 

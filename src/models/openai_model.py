@@ -9,7 +9,7 @@ import pandas as pd
 from openai import OpenAI, ChatCompletion
 
 from src.config import PATH_DATA
-from src.models.models import LanguageModel, LanguageModelResponse
+from src.models.model import LanguageModel, LanguageModelResponse
 from src.models.model_configs import MODELS, API_TIMEOUTS
 from src.models.model_utils import get_timestamp, get_api_key
 from src.prompters.prompt import Modality, Prompt

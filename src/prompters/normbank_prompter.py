@@ -7,7 +7,7 @@ import pandas as pd
 from data.templates.question_templates import QUESTION_TEMPLATES
 from data.templates.response_templates import GOOD_TOKENS, OK_TOKENS, BAD_TOKENS
 from src.config import PATH_DATA
-from src.models.models import LanguageModelResponse
+from src.models.model import LanguageModelResponse
 from src.prompters.prompter import Prompter
 from src.prompters.prompt import Prompt, Scenario, Distractor, Modality, ImagePosition
 
@@ -113,8 +113,11 @@ class NormBankPrompter(Prompter[Prompt]):
             "bad_prob": 0.0
         }
 
+        # print("post_process")
         for action, tokens in action_tokens_dict.items():
+            # print(action)
             for token in tokens:
+                # print(token)
                 result[f"{action}_prob"] += response.get_answer_prob(token)
 
         return result

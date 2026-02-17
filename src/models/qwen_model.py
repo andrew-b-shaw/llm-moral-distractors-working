@@ -8,7 +8,7 @@ from transformers.generation.utils import GenerateDecoderOnlyOutput
 
 from src.config import PATH_HF_CACHE, PATH_OFFLOAD
 from src.models.model_utils import get_timestamp, get_api_key
-from src.models.models import LanguageModel, MODELS, LanguageModelResponse
+from src.models.model import LanguageModel, MODELS, LanguageModelResponse
 from src.prompters.prompt import Modality, Prompt
 
 
@@ -40,15 +40,18 @@ class QwenModelResponse(LanguageModelResponse):
         :return: the probability that the output **starts** with the given string
         """
         token_ids = self._tokenizer.encode(answer)
-        if len(token_ids) > len(self._output.logits) - 1:
+        if len(token_ids) > len(self._output.logits):
             return 0.0
 
         answer_log_prob = 0.0
         for i in range(len(token_ids)):
             token_id = token_ids[i]
-            logits = self._output.logits[i]  # last token ID is EOS
+            logits = self._output.logits[i]
             token_probs = torch.softmax(logits, dim=1).squeeze()
-            answer_log_prob += math.log(token_probs[token_id].item())
+            token_prob = token_probs[token_id].item()
+            if token_prob == 0.0:
+                return 0.0
+            answer_log_prob += math.log(token_prob)
 
         return math.exp(answer_log_prob)
 

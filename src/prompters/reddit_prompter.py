@@ -7,7 +7,7 @@ import pandas as pd
 from data.templates.question_templates import QuestionTemplate, QUESTION_TEMPLATES
 from src.classifier import ME2BERTScorer
 from src.config import PATH_DATA
-from src.models.models import LanguageModelResponse, LanguageModel
+from src.models.model import LanguageModelResponse, LanguageModel
 from src.prompters.prompter import Prompter
 from src.prompters.prompt import Prompt, Scenario, Distractor, Modality, ImagePosition
 

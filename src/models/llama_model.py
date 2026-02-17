@@ -8,7 +8,7 @@ from transformers.generation.utils import GenerateDecoderOnlyOutput
 
 from src.config import PATH_OFFLOAD, PATH_HF_CACHE
 from src.models.model_utils import get_timestamp, get_api_key
-from src.models.models import MODELS, LanguageModel, LanguageModelResponse
+from src.models.model import MODELS, LanguageModel, LanguageModelResponse
 
 from src.prompters.prompt import Modality, Prompt
 
@@ -43,7 +43,10 @@ class LlamaModelResponse(LanguageModelResponse):
             token_id = token_ids[i + 1]  # first token ID is BOS
             logits = self._output.logits[i]
             token_probs = torch.softmax(logits, dim=1).squeeze()
-            answer_log_prob += math.log(token_probs[token_id].item())
+            token_prob = token_probs[token_id].item()
+            if token_prob == 0.0:
+                return 0.0
+            answer_log_prob += math.log(token_prob)
 
         return math.exp(answer_log_prob)
 
