@@ -5,10 +5,11 @@ import re
 import pandas as pd
 
 from data.templates.question_templates import QuestionTemplate, QUESTION_TEMPLATES
+from data.templates.response_templates import ESH_TOKENS, YTA_TOKENS, NTA_TOKENS, NAH_TOKENS, INFO_TOKENS
 from src.classifier import ME2BERTScorer
 from src.config import PATH_DATA
 from src.models.model import LanguageModelResponse, LanguageModel
-from src.prompters.prompter import Prompter
+from src.prompters.prompter import Prompter, BatchPrompter
 from src.prompters.prompt import Prompt, Scenario, Distractor, Modality, ImagePosition
 
 
@@ -126,6 +127,14 @@ class RedditPrompter(Prompter[Prompt]):
         reasoning = self._extract_reasoning(response_text, verdict_idx)
         me2_result = self._me2_bert_scorer.predict([reasoning])[0]
 
+        verdict_answer_mapping = {
+            "esh": ESH_TOKENS,
+            "yta": YTA_TOKENS,
+            "nta": NTA_TOKENS,
+            "nah": NAH_TOKENS,
+            "info": INFO_TOKENS
+        }
+
         result = {
             "scenario_id": prompt["scenario"]["id"],
             "scenario_context": prompt["scenario"]["context"],
@@ -146,12 +155,22 @@ class RedditPrompter(Prompter[Prompt]):
             "response_text": response_text,
             "verdict": verdict,
             "reasoning": reasoning,
+            "esh_prob": 0.0,
+            "yta_prob": 0.0,
+            "nta_prob": 0.0,
+            "nah_prob": 0.0,
+            "info_prob": 0.0,
             "ch_score": me2_result.scores['CH'],
             "fc_score": me2_result.scores['FC'],
             "lb_score": me2_result.scores['LB'],
             "as_score": me2_result.scores['AS'],
             "pd_score": me2_result.scores['PD']
         }
+
+        for verdict, answers in verdict_answer_mapping.items():
+            for answer in answers:
+                result[f"{verdict}_prob"] += response.get_answer_prob(answer)
+
         return result
 
     def _get_response_text(self, response: LanguageModelResponse) -> str:
@@ -189,3 +208,12 @@ class RedditPrompter(Prompter[Prompt]):
     def _strip_follow_up_headers(self, reasoning: str) -> str | None:
         cleaned = re.split(r"\n\s*(?:Verdict|Reasoning|Reason|Explanation|Summary)\s*[:\-]", reasoning, maxsplit=1)[0].strip()
         return cleaned or None
+
+
+class RedditBatchSubmitPrompter(RedditPrompter, BatchPrompter):
+    def post_process(
+        self,
+        prompt: Prompt,
+        response: LanguageModelResponse
+    ) -> dict[str, any]:
+        return {}

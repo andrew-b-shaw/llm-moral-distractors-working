@@ -16,6 +16,7 @@ from datasets import load_dataset, config as datasets_config
 from huggingface_hub import hf_hub_download
 
 from src.models.model_creator import create_model
+from src.models.model import BatchRetrieveLanguageModel
 from src.prompters.moralchoice_prompter import MoralChoicePrompter
 from src.prompters.reddit_prompter import RedditPrompter
 from src.prompters.normbank_prompter import NormBankPrompter
@@ -97,6 +98,18 @@ parser.add_argument(
 parser.add_argument(
     "--reddit-id-column",
     default="submission_id",
+    type=str,
+    help="Column in the reddit dataset that should be treated as the scenario id.",
+)
+parser.add_argument(
+    "--batch-index-filename",
+    default=None,
+    type=str,
+    help="Column in the reddit dataset that should be treated as the scenario id.",
+)
+parser.add_argument(
+    "--batch-response-filename",
+    default=None,
     type=str,
     help="Column in the reddit dataset that should be treated as the scenario id.",
 )
@@ -331,6 +344,15 @@ torch.cuda.empty_cache()
 
 # Create model and prompter
 model = create_model(args.model_name)
+if isinstance(model, BatchRetrieveLanguageModel):
+    if not args.batch_response_filename:
+        raise ValueError("Please provide an argument to batch-response-filename!")
+    if not args.batch_index_filename:
+        raise ValueError("Please provide an argument to batch-index-filename!")
+    model.set_response_filename(args.batch_response_filename)
+    model.set_index_filename(args.batch_index_filename)
+    model.load_indices()
+
 prompter = create_prompter(
     args.dataset,
     model,

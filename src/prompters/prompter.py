@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from typing import TypeVar, Generic
 
 from src.models.model import LanguageModel, LanguageModelResponse
@@ -100,3 +100,25 @@ class Prompter(Generic[AnyPrompt]):
             result = self.post_process(prompt, response)
             results.append(result)
         return results
+
+
+class BatchPrompter(Prompter[AnyPrompt], ABC):
+    """Generic Batch Prompter class"""
+
+    def __init__(
+        self,
+        model: LanguageModel,
+        max_tokens: int,
+        temperature: float,
+        top_p: float
+    ):
+        super().__init__(model, max_tokens, temperature, top_p)
+        self._submit_filename = None
+        self._retrieve_filename = None
+
+    def set_submit_filename(self, filename: str):
+        self._submit_filename = filename
+
+    def set_retrieve_filename(self, filename: str):
+        self._retrieve_filename = filename
+

@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 
+import pandas as pd
+
+from src.config import PATH_DATA
 from src.prompters.prompt import Prompt
 from src.models.model_configs import MODELS
 
@@ -67,3 +70,26 @@ class LanguageModel:
         """
         pass
 
+
+class BatchRetrieveLanguageModel(LanguageModel, ABC):
+    """Generic Batch Retrieve Language Model class"""
+    _response_filename: str
+    _index_filename: str
+    _indices: dict[str, int]
+
+    def __init__(self, model_name):
+        super().__init__(model_name)
+        self._response_filename = ""
+        self._index_filename = ""
+        self._indices = {}
+
+    def set_index_filename(self, filename: str):
+        self._index_filename = filename
+
+    def set_response_filename(self, filename: str):
+        self._response_filename = filename
+
+    def load_indices(self):
+        index_df = pd.read_csv(PATH_DATA / self._index_filename)
+        for i, row in index_df.iterrows():
+            self._indices[row["prompt_id"]] = row["line"]
