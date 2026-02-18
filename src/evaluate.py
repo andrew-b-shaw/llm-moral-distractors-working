@@ -351,7 +351,7 @@ if isinstance(model, BatchRetrieveLanguageModel):
         raise ValueError("Please provide an argument to batch-index-filename!")
     model.set_response_filename(args.batch_response_filename)
     model.set_index_filename(args.batch_index_filename)
-    model.load_indices()
+    model.load_data()
 
 prompter = create_prompter(
     args.dataset,

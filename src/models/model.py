@@ -76,6 +76,7 @@ class BatchRetrieveLanguageModel(LanguageModel, ABC):
     _response_filename: str
     _index_filename: str
     _indices: dict[str, int]
+    _lines: list[str]
 
     def __init__(self, model_name):
         super().__init__(model_name)
@@ -89,7 +90,9 @@ class BatchRetrieveLanguageModel(LanguageModel, ABC):
     def set_response_filename(self, filename: str):
         self._response_filename = filename
 
-    def load_indices(self):
+    def load_data(self):
         index_df = pd.read_csv(PATH_DATA / self._index_filename)
         for i, row in index_df.iterrows():
             self._indices[row["prompt_id"]] = row["line"]
+        with open(PATH_DATA / self._response_filename, 'r') as f:
+            self._lines = f.readlines()

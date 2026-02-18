@@ -125,7 +125,7 @@ class RedditPrompter(Prompter[Prompt]):
         response_text = self._get_response_text(response)
         verdict, verdict_idx = self._extract_verdict(response_text)
         reasoning = self._extract_reasoning(response_text, verdict_idx)
-        me2_result = self._me2_bert_scorer.predict([reasoning])[0]
+        # me2_result = self._me2_bert_scorer.predict([reasoning])[0]
 
         verdict_answer_mapping = {
             "esh": ESH_TOKENS,
@@ -160,11 +160,11 @@ class RedditPrompter(Prompter[Prompt]):
             "nta_prob": 0.0,
             "nah_prob": 0.0,
             "info_prob": 0.0,
-            "ch_score": me2_result.scores['CH'],
-            "fc_score": me2_result.scores['FC'],
-            "lb_score": me2_result.scores['LB'],
-            "as_score": me2_result.scores['AS'],
-            "pd_score": me2_result.scores['PD']
+            # "ch_score": me2_result.scores['CH'],
+            # "fc_score": me2_result.scores['FC'],
+            # "lb_score": me2_result.scores['LB'],
+            # "as_score": me2_result.scores['AS'],
+            # "pd_score": me2_result.scores['PD']
         }
 
         for verdict, answers in verdict_answer_mapping.items():

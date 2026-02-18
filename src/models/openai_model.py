@@ -29,7 +29,7 @@ class OpenAIModelResponse(LanguageModelResponse):
         output: ChatCompletion
     ):
         super().__init__(timestamp, answer, answer_raw)
-        self._tokenizer = tiktoken.get_encoding("cl100k_base")
+        self._tokenizer = tiktoken.get_encoding("o200k_base")
         self._top_logprobs = []
         for token in output.choices[0].logprobs.content:
             self._top_logprobs.append(dict([
@@ -170,7 +170,7 @@ class OpenAIBatchRetrieveModelResponse(LanguageModelResponse):
         output: dict
     ):
         super().__init__(timestamp, answer, answer_raw)
-        self._tokenizer = tiktoken.get_encoding("cl100k_base")
+        self._tokenizer = tiktoken.get_encoding("o200k_base")
         self._top_logprobs = []
         for token in output["choices"][0]["logprobs"]["content"]:
             self._top_logprobs.append(dict([
@@ -180,6 +180,7 @@ class OpenAIBatchRetrieveModelResponse(LanguageModelResponse):
 
     def get_answer_prob(self, answer: str) -> float:
         answer_tokens = [self._tokenizer.decode([token_id]) for token_id in self._tokenizer.encode(answer)]
+        # breakpoint()
         if len(answer_tokens) > len(self._top_logprobs):
             return 0.0
 
@@ -204,17 +205,15 @@ class OpenAIBatchRetrieveModel(BatchRetrieveLanguageModel):
         if prompt["id"] not in self._indices:
             raise ValueError("The given prompt ID is not in the returned responses for the batch!")
 
-        with open(PATH_DATA / self._response_filename, 'r') as f:
-            index = self._indices[prompt["id"]]
-            for i, line in enumerate(f):
-                if i == index:
-                    response = orjson.loads(line)["response"]["body"]
-                    answer_raw = response["choices"][0]["message"]["content"]
-                    answer = answer_raw.strip()
+        index = self._indices[prompt["id"]]
+        line = self._lines[index]
+        response = orjson.loads(line)["response"]["body"]
+        answer_raw = response["choices"][0]["message"]["content"]
+        answer = answer_raw.strip()
 
-                    return OpenAIBatchRetrieveModelResponse(
-                        timestamp=get_timestamp(),
-                        answer_raw=answer_raw,
-                        answer=answer,
-                        output=response
-                    )
+        return OpenAIBatchRetrieveModelResponse(
+            timestamp=get_timestamp(),
+            answer_raw=answer_raw,
+            answer=answer,
+            output=response
+        )
