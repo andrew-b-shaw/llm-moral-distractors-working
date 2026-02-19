@@ -167,3 +167,12 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
                 result[f"a{action_mapping_dict[action] + 1}_prob"] += response.get_answer_prob(token)
 
         return result
+
+
+class MoralChoiceBatchSubmitPrompter(MoralChoicePrompter):
+    def post_process(
+            self,
+            prompt: Prompt,
+            response: LanguageModelResponse
+    ) -> dict[str, any]:
+        return {}

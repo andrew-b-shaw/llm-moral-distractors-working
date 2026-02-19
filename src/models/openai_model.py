@@ -21,22 +21,6 @@ class OpenAIModelResponse(LanguageModelResponse):
     _tokenizer: Encoding
     _top_logprobs: list[dict[str, float]]
 
-    def __init__(
-        self,
-        timestamp: str,
-        answer: str,
-        answer_raw: str,
-        output: ChatCompletion
-    ):
-        super().__init__(timestamp, answer, answer_raw)
-        self._tokenizer = tiktoken.get_encoding("o200k_base")
-        self._top_logprobs = []
-        for token in output.choices[0].logprobs.content:
-            self._top_logprobs.append(dict([
-                (top_logprob.token, top_logprob.logprob)
-                for top_logprob in token.top_logprobs
-            ]))
-
     def get_answer_prob(self, answer: str) -> float:
         answer_tokens = [self._tokenizer.decode([token_id]) for token_id in self._tokenizer.encode(answer)]
         if len(answer_tokens) > len(self._top_logprobs):
@@ -50,6 +34,47 @@ class OpenAIModelResponse(LanguageModelResponse):
                 return 0.0
 
         return math.exp(answer_logprob)
+
+
+class OpenAIPythonModelResponse(OpenAIModelResponse):
+    def __init__(
+            self,
+            timestamp: str,
+            answer: str,
+            answer_raw: str,
+            output: ChatCompletion
+    ):
+        super().__init__(timestamp, answer, answer_raw)
+        self._tokenizer = tiktoken.get_encoding("o200k_base")
+        self._top_logprobs = []
+        for token in output.choices[0].logprobs.content:
+            self._top_logprobs.append(dict([
+                (top_logprob.token, top_logprob.logprob)
+                for top_logprob in token.top_logprobs
+            ]))
+
+
+class OpenAIBatchRetrieveModelResponse(OpenAIModelResponse):
+    def __init__(
+            self,
+            timestamp: str,
+            answer: str,
+            answer_raw: str,
+            output: dict
+    ):
+        super().__init__(timestamp, answer, answer_raw)
+        self._tokenizer = tiktoken.get_encoding("o200k_base")
+        self._top_logprobs = []
+        for token in output["choices"][0]["logprobs"]["content"]:
+            self._top_logprobs.append(dict([
+                (top_logprob["token"], top_logprob["logprob"])
+                for top_logprob in token["top_logprobs"]
+            ]))
+
+
+class OpenAIBatchSubmitResponse(LanguageModelResponse):
+    def get_answer_prob(self, answer: str) -> float:
+        return 0.0
 
 
 class OpenAIModel(LanguageModel):
@@ -107,7 +132,7 @@ class OpenAIModel(LanguageModel):
         answer_raw = response.choices[0].message.content
         answer = answer_raw.strip()
 
-        return OpenAIModelResponse(
+        return OpenAIPythonModelResponse(
             timestamp=get_timestamp(),
             answer_raw=answer_raw,
             answer=answer,
@@ -115,17 +140,7 @@ class OpenAIModel(LanguageModel):
         )
 
 
-class OpenAIBatchSubmitResponse(LanguageModelResponse):
-    def get_answer_prob(self, answer: str) -> float:
-        return 0.0
-
-
 class OpenAIBatchSubmitModel(LanguageModel):
-    def __init__(self, model_name: str):
-        super().__init__(model_name)
-        warnings.warn("Prompter post-processing may need to be manually disabled when submitting a batch request!")
-        warnings.warn("Filename MUST be set manually in the OpenAIBatchSubmitModel config!")
-
     def query(
             self,
             prompt: Prompt,
@@ -159,39 +174,6 @@ class OpenAIBatchSubmitModel(LanguageModel):
             answer_raw="",
             answer=""
         )
-
-
-class OpenAIBatchRetrieveModelResponse(LanguageModelResponse):
-    def __init__(
-        self,
-        timestamp: str,
-        answer: str,
-        answer_raw: str,
-        output: dict
-    ):
-        super().__init__(timestamp, answer, answer_raw)
-        self._tokenizer = tiktoken.get_encoding("o200k_base")
-        self._top_logprobs = []
-        for token in output["choices"][0]["logprobs"]["content"]:
-            self._top_logprobs.append(dict([
-                (top_logprob["token"], top_logprob["logprob"])
-                for top_logprob in token["top_logprobs"]
-            ]))
-
-    def get_answer_prob(self, answer: str) -> float:
-        answer_tokens = [self._tokenizer.decode([token_id]) for token_id in self._tokenizer.encode(answer)]
-        # breakpoint()
-        if len(answer_tokens) > len(self._top_logprobs):
-            return 0.0
-
-        answer_logprob = 0.0
-        for answer_token, top_logprob in zip(answer_tokens, self._top_logprobs):
-            if answer_token in top_logprob:
-                answer_logprob += top_logprob[answer_token]
-            else:
-                return 0.0
-
-        return math.exp(answer_logprob)
 
 
 class OpenAIBatchRetrieveModel(BatchRetrieveLanguageModel):

@@ -16,13 +16,13 @@ from datasets import load_dataset, config as datasets_config
 from huggingface_hub import hf_hub_download
 
 from src.models.model_creator import create_model
-from src.models.model import BatchRetrieveLanguageModel
+from src.models.model import BatchSubmitLanguageModel, BatchRetrieveLanguageModel
 from src.prompters.moralchoice_prompter import MoralChoicePrompter
 from src.prompters.reddit_prompter import RedditPrompter
-from src.prompters.normbank_prompter import NormBankPrompter
-from src.prompters.normbank_batch_submit_prompter import NormBankBatchSubmitPrompter
+from src.prompters.normbank_prompter import NormBankPrompter, NormBankBatchSubmitPrompter
 
 from src.config import PATH_RESULTS, PATH_DATA, PATH_HF_CACHE
+from data.scenarios.datasets import DATASETS
 
 ################################################################################################
 # ARGUMENT PARSER
@@ -102,78 +102,35 @@ parser.add_argument(
     help="Column in the reddit dataset that should be treated as the scenario id.",
 )
 parser.add_argument(
-    "--batch-index-filename",
+    "--batch-submit-output-filename",
     default=None,
     type=str,
-    help="Column in the reddit dataset that should be treated as the scenario id.",
+    help="Name of file to output requests to for batch submission.",
 )
 parser.add_argument(
-    "--batch-response-filename",
+    "--batch-retrieve-index-filename",
     default=None,
     type=str,
-    help="Column in the reddit dataset that should be treated as the scenario id.",
+    help="Name of file with mapping from id to line number for batch retrieval.",
+)
+parser.add_argument(
+    "--batch-retrieve-response-filename",
+    default=None,
+    type=str,
+    help="Name of file with responses for batch retrieval.",
 )
 
 args = parser.parse_args()
-
 datasets_config.USE_DILL_FOR_PICKLING = False
-
-PATH_SCENARIOS = Path(__file__).resolve().parent.parent / "data" / "scenarios"
 
 ################################################################################################
 # PROMPTER CREATOR
 ################################################################################################
-DATASETS = {
-    "moralchoice_high_ambiguity": {
-        "prompter_class": "MoralChoicePrompter",
-        "scenario_loader": "csv",
-        "scenario_path": PATH_SCENARIOS / "moralchoice_high_ambiguity.csv",
-        "default_question_formats": ["ab"],
-        "supports_distractors": True,
-        "default_temperature": 1.0,
-        "default_top_p": 1.0,
-    },
-    "moralchoice_low_ambiguity": {
-        "prompter_class": "MoralChoicePrompter",
-        "scenario_loader": "csv",
-        "scenario_path": PATH_SCENARIOS / "moralchoice_low_ambiguity.csv",
-        "default_question_formats": ["ab"],
-        "supports_distractors": True,
-        "default_temperature": 1.0,
-        "default_top_p": 1.0,
-    },
-    "reddit": {
-        "prompter_class": "RedditPrompter",
-        "scenario_loader": "reddit",
-        "default_question_formats": ["reddit"],
-        "supports_distractors": True,
-        "hf_dataset_name": "ucberkeley-dlab/normative_evaluation_llms_everyday_dilemmas",
-        "hf_dataset_file": "normative_evaluation_everyday_dilemmas_dataset.csv",
-        "default_temperature": 0.2,
-        "default_top_p": 1.0,
-    },
-    "normbank": {
-        "prompter_class": "NormBankPrompter",
-        "scenario_loader": "csv",
-        "scenario_path": PATH_SCENARIOS / "normbank.csv",
-        "default_question_formats": ["normbank"],
-        "supports_distractors": True,
-        "default_temperature": 0.2,
-        "default_top_p": 1.0,
-    },
-    "normbank_batch_submit": {
-        "prompter_class": "NormBankBatchSubmitPrompter",
-        "scenario_loader": "csv",
-        "scenario_path": PATH_SCENARIOS / "normbank.csv",
-        "default_question_formats": ["normbank"],
-        "supports_distractors": True,
-        "default_temperature": 0.2,
-        "default_top_p": 1.0,
-    },
-}
 
 MoralChoicePrompter = MoralChoicePrompter
 RedditPrompter = RedditPrompter
+NormBankPrompter = NormBankPrompter
+NormBankBatchSubmitPrompter = NormBankBatchSubmitPrompter
 
 
 def create_prompter(dataset_name, model, max_tokens, temperature, top_p):
@@ -285,7 +242,6 @@ def _safe_identifier(series: Optional[pd.Series]) -> str:
         for c in str(id)
     )
 
-
 ################################################################################################
 # SETUP
 ################################################################################################
@@ -339,20 +295,24 @@ for question_format in question_formats:
 ################################################################################################
 # RUN EVALUATION
 ################################################################################################
+# Clean memory
 gc.collect()
 torch.cuda.empty_cache()
 
-# Create model and prompter
+# Create model
 model = create_model(args.model_name)
+if isinstance(model, BatchSubmitLanguageModel):
+    if not args.batch_submit_output_filename:
+        raise ValueError("Please provide an argument to batch-submit-output-filename!")
+    model.set_filename(args.batch_submit_output_filename)
 if isinstance(model, BatchRetrieveLanguageModel):
-    if not args.batch_response_filename:
+    if not args.batch_retrieve_response_filename:
         raise ValueError("Please provide an argument to batch-response-filename!")
-    if not args.batch_index_filename:
+    if not args.batch_retrieve_index_filename:
         raise ValueError("Please provide an argument to batch-index-filename!")
-    model.set_response_filename(args.batch_response_filename)
-    model.set_index_filename(args.batch_index_filename)
-    model.load_data()
+    model.load_data(args.batch_index_filename, args.batch_response_filename)
 
+# Create prompter
 prompter = create_prompter(
     args.dataset,
     model,
@@ -361,6 +321,7 @@ prompter = create_prompter(
     top_p,
 )
 
+# Run experiment
 def run_experiment(scenario_series: pd.Series, distractor_series: Optional[pd.Series]):
     for question_format in question_formats:
         s_id = _safe_identifier(scenario_series)
@@ -395,7 +356,6 @@ def run_experiment(scenario_series: pd.Series, distractor_series: Optional[pd.Se
 
         with open(result_path, "wb") as f:
             pickle.dump(pd.DataFrame(results), f, protocol=0)
-
 
 for i_s, scenario_series in tqdm(
         scenarios.iterrows(),

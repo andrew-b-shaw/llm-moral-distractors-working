@@ -121,3 +121,12 @@ class NormBankPrompter(Prompter[Prompt]):
                 result[f"{action}_prob"] += response.get_answer_prob(token)
 
         return result
+
+
+class NormBankBatchSubmitPrompter(NormBankPrompter):
+    def post_process(
+            self,
+            prompt: Prompt,
+            response: LanguageModelResponse
+    ) -> dict[str, any]:
+        return {}

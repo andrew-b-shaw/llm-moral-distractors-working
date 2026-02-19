@@ -210,7 +210,7 @@ class RedditPrompter(Prompter[Prompt]):
         return cleaned or None
 
 
-class RedditBatchSubmitPrompter(RedditPrompter, BatchPrompter):
+class RedditBatchSubmitPrompter(RedditPrompter):
     def post_process(
         self,
         prompt: Prompt,

@@ -18,8 +18,7 @@ MODELS = {
         "model_name": "openai/gpt-4.1-batch-submit",
         "8bit": None,
         "likelihood_access": False,
-        "endpoint": "ChatCompletion",
-        "output_filepath": "gpt-4.1-normbank-batch-submit.jsonl"  # set manually
+        "endpoint": "ChatCompletion"
     },
     "openai/gpt-4.1-batch-retrieve": {
         "company": "openai",
@@ -27,8 +26,7 @@ MODELS = {
         "model_name": "openai/gpt-4.1-batch-retrieve",
         "8bit": None,
         "likelihood_access": False,
-        "endpoint": "ChatCompletion",
-        "input_filepath": "gpt-4.1-reddit-batch-responses.csv"  # set manually
+        "endpoint": "ChatCompletion"
     },
     "Qwen/Qwen3-VL-2B-Instruct": {
         "company": "AliBaba",

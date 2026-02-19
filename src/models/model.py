@@ -71,28 +71,30 @@ class LanguageModel:
         pass
 
 
+class BatchSubmitLanguageModel(LanguageModel, ABC):
+    """Generic Batch Submit Language Model class"""
+    _output_filename: str
+
+    def __init__(self, model_name: str):
+        super().__init__(model_name)
+        self._output_filename = ""
+
+    def set_filename(self, filename: str):
+        self._output_filename = filename
+
+
 class BatchRetrieveLanguageModel(LanguageModel, ABC):
     """Generic Batch Retrieve Language Model class"""
-    _response_filename: str
-    _index_filename: str
     _indices: dict[str, int]
     _lines: list[str]
 
     def __init__(self, model_name):
         super().__init__(model_name)
-        self._response_filename = ""
-        self._index_filename = ""
         self._indices = {}
 
-    def set_index_filename(self, filename: str):
-        self._index_filename = filename
-
-    def set_response_filename(self, filename: str):
-        self._response_filename = filename
-
-    def load_data(self):
-        index_df = pd.read_csv(PATH_DATA / self._index_filename)
+    def load_data(self, index_filename: str, response_filename: str):
+        index_df = pd.read_csv(PATH_DATA / index_filename)
         for i, row in index_df.iterrows():
             self._indices[row["prompt_id"]] = row["line"]
-        with open(PATH_DATA / self._response_filename, 'r') as f:
+        with open(PATH_DATA / response_filename, 'r') as f:
             self._lines = f.readlines()
