@@ -9,7 +9,7 @@ from data.templates.response_templates import ESH_TOKENS, YTA_TOKENS, NTA_TOKENS
 from src.classifier import ME2BERTScorer
 from src.config import PATH_DATA
 from src.models.model import LanguageModelResponse, LanguageModel
-from src.prompters.prompter import Prompter, BatchPrompter
+from src.prompters.prompter import Prompter
 from src.prompters.prompt import Prompt, Scenario, Distractor, Modality, ImagePosition
 
 

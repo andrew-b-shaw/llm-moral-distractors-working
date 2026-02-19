@@ -310,7 +310,7 @@ if isinstance(model, BatchRetrieveLanguageModel):
         raise ValueError("Please provide an argument to batch-response-filename!")
     if not args.batch_retrieve_index_filename:
         raise ValueError("Please provide an argument to batch-index-filename!")
-    model.load_data(args.batch_index_filename, args.batch_response_filename)
+    model.load_data(args.batch_retrieve_index_filename, args.batch_retrieve_response_filename)
 
 # Create prompter
 prompter = create_prompter(
