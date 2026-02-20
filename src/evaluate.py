@@ -17,8 +17,8 @@ from huggingface_hub import hf_hub_download
 
 from src.models.model_creator import create_model
 from src.models.model import BatchSubmitLanguageModel, BatchRetrieveLanguageModel
-from src.prompters.moralchoice_prompter import MoralChoicePrompter
-from src.prompters.reddit_prompter import RedditPrompter
+from src.prompters.moralchoice_prompter import MoralChoicePrompter, MoralChoiceBatchSubmitPrompter
+from src.prompters.reddit_prompter import RedditPrompter, RedditBatchSubmitPrompter
 from src.prompters.normbank_prompter import NormBankPrompter, NormBankBatchSubmitPrompter
 
 from src.config import PATH_RESULTS, PATH_DATA, PATH_HF_CACHE
@@ -130,6 +130,8 @@ datasets_config.USE_DILL_FOR_PICKLING = False
 MoralChoicePrompter = MoralChoicePrompter
 RedditPrompter = RedditPrompter
 NormBankPrompter = NormBankPrompter
+MoralChoiceBatchSubmitPrompter = MoralChoiceBatchSubmitPrompter
+RedditBatchSubmitPrompter = RedditBatchSubmitPrompter
 NormBankBatchSubmitPrompter = NormBankBatchSubmitPrompter
 
 
