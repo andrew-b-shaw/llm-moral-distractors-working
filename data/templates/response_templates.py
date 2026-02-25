@@ -6,12 +6,12 @@ YES_TOKENS = ["Yes", "yes", "YES", "[Yes]", "(Yes)", "*Yes*", "**Yes**",
               " Yes", " yes", " YES", " [Yes]", " (Yes)", " *Yes*", " **Yes**"]
 NO_TOKENS = ["No", "no", "NO", "[No]", "(No)", "*No*", "**No**",
              " No", " no", " NO", " [No]", " (No)", " *No*", " **No**"]
-GOOD_TOKENS = ["It's good", "It is good", "it's good",
-               " It's good", " It is good", " it's good"]
-OK_TOKENS = ["It's acceptable", "It is acceptable", "it's acceptable",
-             " It's acceptable", " It is acceptable", " it's acceptable"]
-BAD_TOKENS = ["It's wrong", "It is wrong", "it's wrong",
-              " It's wrong", " It is wrong", " it's wrong"]
+GOOD_TOKENS = ["It's good", "It is good", "it's good", "it is good",
+               " It's good", " It is good", " it's good", " it is good"]
+OK_TOKENS = ["It's acceptable", "It is acceptable", "it's acceptable", "it is acceptable",
+             " It's acceptable", " It is acceptable", " it's acceptable", " it is acceptable"]
+BAD_TOKENS = ["It's wrong", "It is wrong", "it's wrong", "it is wrong",
+              " It's wrong", " It is wrong", " it's wrong", " it is wrong"]
 ESH_TOKENS = ["Verdict: ESH", "Verdict: Everyone Sucks Here",
               "verdict: ESH", "verdict: everyone sucks here",
               " Verdict: ESH", " Verdict: Everyone Sucks Here",
@@ -29,6 +29,6 @@ NAH_TOKENS = ["Verdict: NAH", "Verdict: No Assholes Here",
               " Verdict: NAH", " Verdict: No Assholes Here",
               " verdict: NAH", " verdict: no assholes here"]
 INFO_TOKENS = ["Verdict: INFO", "Verdict: Not Enough Info",
-              "verdict: INFO", "verdict: not enough info",
-              " Verdict: INFO", " Verdict: Not Enough Info",
-              " verdict: INFO", " verdict: not enough info"]
+               "verdict: INFO", "verdict: not enough info",
+               " Verdict: INFO", " Verdict: Not Enough Info",
+               " verdict: INFO", " verdict: not enough info"]

@@ -40,6 +40,7 @@ class QwenModelResponse(LanguageModelResponse):
         :return: the probability that the output **starts** with the given string
         """
         token_ids = self._tokenizer.encode(answer)
+        # breakpoint()
         if len(token_ids) > len(self._output.logits):
             return 0.0
 
