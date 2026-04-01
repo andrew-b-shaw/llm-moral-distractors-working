@@ -7,44 +7,62 @@ import gc
 from pathlib import Path
 from typing import Optional
 
+from src.models.model_configs import MODELS
+
 os.environ.setdefault("HF_DATASETS_USE_DILL", "0")
 
 import torch
 import pandas as pd
 from tqdm import tqdm
-from datasets import load_dataset, config as datasets_config
+from datasets import config as datasets_config
 from huggingface_hub import hf_hub_download
 
-from src.models.model_creator import create_model
-from src.models.model import BatchSubmitLanguageModel, BatchRetrieveLanguageModel
 from src.prompters.moralchoice_prompter import MoralChoicePrompter, MoralChoiceBatchSubmitPrompter
 from src.prompters.reddit_prompter import RedditPrompter, RedditBatchSubmitPrompter
 from src.prompters.normbank_prompter import NormBankPrompter, NormBankBatchSubmitPrompter
 
-from src.config import PATH_RESULTS, PATH_DATA, PATH_HF_CACHE
-from data.scenarios.datasets import DATASETS
+from src.models.model import BatchSubmitLanguageModel, BatchRetrieveLanguageModel
+from src.models.openai_model import OpenAIModel, OpenAIBatchSubmitModel, OpenAIBatchRetrieveModel
+from src.models.gemma_model import GemmaModel
+from src.models.llama_model import LlamaModel
+from src.models.ollama_model import OllamaModel
+from src.models.qwen_model import QwenModel
+from src.models.qwen_vl_model import QwenVLModel
+
+from src.config import PATH_DISTRACTORS, PATH_RESULTS, PATH_HF_CACHE
+from data.scenarios.dataset_configs import DATASETS
 
 ################################################################################################
 # ARGUMENT PARSER
 ################################################################################################
-parser = argparse.ArgumentParser(description="LLM Evaluation on MoralChoice")
+parser = argparse.ArgumentParser(description="LLM Ethics Benchmark Evaluation with Moral Distractors")
 parser.add_argument(
     "--experiment-name",
-    default="test",
     type=str,
     help="Name of Experiment - used for logging",
 )
 parser.add_argument(
     "--dataset",
-    default="moralchoice_high_ambiguity",
     type=str,
-    help="Dataset to evaluate (moralchoice_high_ambiguity, moralchoice_low_ambiguity, reddit)",
+    help="Dataset to evaluate (moralchoice_high_ambiguity, moralchoice_low_ambiguity, normbank, reddit)",
 )
 parser.add_argument(
     "--distractors",
     default="none",
     type=str,
     help="Which distractors to use (all, text, image, none)",
+)
+parser.add_argument(
+    "--batch-submit",
+    action='store_true',
+    default=False,
+    help="Whether to create batch request for submission",
+)
+parser.add_argument(
+    "--batch-retrieve",
+    action='store_true',
+    default=False,
+    help="Whether to retrieve batch request",
 )
 parser.add_argument(
     "--model-name",
@@ -78,10 +96,16 @@ parser.add_argument(
     help="Max. number of tokens per completion",
 )
 parser.add_argument(
-    "--eval-num-samples", default=1, type=int, help="Num. of samples per question form"
+    "--eval-num-samples",
+    default=1,
+    type=int,
+    help="Num. of samples per question form"
 )
 parser.add_argument(
-    "--eval-num-scenarios", default=-1, type=int, help="Num. of scenarios to evaluate"
+    "--eval-num-scenarios",
+    default=-1,
+    type=int,
+    help="Num. of scenarios to evaluate"
 )
 parser.add_argument(
     "--reddit-dataset-name",
@@ -108,12 +132,6 @@ parser.add_argument(
     help="Name of file to output requests to for batch submission.",
 )
 parser.add_argument(
-    "--batch-retrieve-index-filename",
-    default=None,
-    type=str,
-    help="Name of file with mapping from id to line number for batch retrieval.",
-)
-parser.add_argument(
     "--batch-retrieve-response-filename",
     default=None,
     type=str,
@@ -124,33 +142,14 @@ args = parser.parse_args()
 datasets_config.USE_DILL_FOR_PICKLING = False
 
 ################################################################################################
-# PROMPTER CREATOR
+# HELPER METHODS
 ################################################################################################
-
-MoralChoicePrompter = MoralChoicePrompter
-RedditPrompter = RedditPrompter
-NormBankPrompter = NormBankPrompter
-MoralChoiceBatchSubmitPrompter = MoralChoiceBatchSubmitPrompter
-RedditBatchSubmitPrompter = RedditBatchSubmitPrompter
-NormBankBatchSubmitPrompter = NormBankBatchSubmitPrompter
-
-
-def create_prompter(dataset_name, model, max_tokens, temperature, top_p):
-    """Init Models from model_name only"""
-    if dataset_name in DATASETS:
-        class_name = DATASETS[dataset_name]["prompter_class"]
-        cls = getattr(sys.modules[__name__], class_name)
-        return cls(model, max_tokens, temperature, top_p)
-
-    raise ValueError(f"Unknown Dataset '{dataset_name}'")
-
 
 def _get_dataset_config(dataset_name: str) -> dict:
     try:
         return DATASETS[dataset_name]
     except KeyError as exc:
         raise ValueError(f"Unknown dataset '{dataset_name}'") from exc
-
 
 def _load_csv_scenarios(path: Path, max_rows: int) -> pd.DataFrame:
     if not path.exists():
@@ -159,7 +158,6 @@ def _load_csv_scenarios(path: Path, max_rows: int) -> pd.DataFrame:
     if max_rows > 0:
         scenarios = scenarios.iloc[:max_rows]
     return scenarios
-
 
 def _load_reddit_scenarios(max_rows: int) -> pd.DataFrame:
     dataset_name = args.reddit_dataset_name or DATASETS["reddit"]["hf_dataset_name"]
@@ -199,7 +197,6 @@ def _load_reddit_scenarios(max_rows: int) -> pd.DataFrame:
     scenarios.reset_index(drop=True, inplace=True)
     return scenarios
 
-
 def load_scenarios(dataset_name: str, max_rows: int) -> pd.DataFrame:
     dataset_config = _get_dataset_config(dataset_name)
     loader_key = dataset_config.get("scenario_loader", "csv")
@@ -209,13 +206,12 @@ def load_scenarios(dataset_name: str, max_rows: int) -> pd.DataFrame:
         return _load_reddit_scenarios(max_rows)
     raise ValueError(f"Unsupported loader '{loader_key}' for dataset '{dataset_name}'.")
 
-
 def load_distractors(setting: str) -> Optional[pd.DataFrame]:
     setting = (setting or "none").lower()
     if setting == "none":
         return None
 
-    distractor_path = PATH_DATA / "distractors.csv"
+    distractor_path = PATH_DISTRACTORS / "distractors.csv"
     if not distractor_path.exists():
         raise FileNotFoundError(f"Distractor file not found: {distractor_path}")
 
@@ -233,7 +229,6 @@ def load_distractors(setting: str) -> Optional[pd.DataFrame]:
         return None
     return distractors
 
-
 def _safe_identifier(series: Optional[pd.Series]) -> str:
     if series is None:
         return "none"
@@ -243,6 +238,52 @@ def _safe_identifier(series: Optional[pd.Series]) -> str:
         c if c.isalnum() or c in {"-", "_"} else "_"
         for c in str(id)
     )
+
+################################################################################################
+# PROMPTER CREATION
+################################################################################################
+
+def create_prompter(dataset_name, model, max_tokens, temperature, top_p):
+    if dataset_name in DATASETS:
+        if args.batch_submit:
+            class_name = DATASETS[dataset_name]["batch_submit_prompter_class"]
+        else:
+            class_name = DATASETS[dataset_name]["prompter_class"]
+        cls = getattr(sys.modules[__name__], class_name)
+        return cls(model, max_tokens, temperature, top_p)
+
+    raise ValueError(f"Unknown Dataset '{dataset_name}'")
+
+################################################################################################
+# MODEL CREATION
+################################################################################################
+
+def create_model(model_name):
+    if model_name in MODELS:
+        if args.batch_submit:
+            if "batch_submit_model_class" not in MODELS[model_name]:
+                raise ValueError(f"Model {model_name} does not have an associated BatchSubmitModel!")
+            if args.batch_submit_output_filename is None:
+                raise ValueError("--batch-submit-output-filename arg is required when --batch-submit is True!")
+            class_name = MODELS[model_name]["batch_submit_model_class"]
+        elif args.batch_retrieve:
+            if "batch_retrieve_model_class" not in MODELS[model_name]:
+                raise ValueError(f"Model {model_name} does not have an associated BatchRetrieveModel!")
+            if args.batch_retrieve_response_filename is None:
+                raise ValueError("--batch-retrieve-response-filename arg is required when --batch-retrieve is True!")
+            class_name = MODELS[model_name]["batch_retrieve_model_class"]
+        else:
+            class_name = MODELS[model_name]["model_class"]
+
+        cls = getattr(sys.modules[__name__], class_name)
+        model = cls(model_name)
+        if args.batch_submit:
+            model.set_filename(args.batch_submit_output_filename)
+        if args.batch_retrieve:
+            model.load_data(args.batch_retrieve_response_filename)
+        return model
+
+    raise ValueError(f"Unknown Model '{model_name}'")
 
 ################################################################################################
 # SETUP
@@ -283,7 +324,7 @@ temperature = args.eval_temp if args.eval_temp is not None else default_temperat
 top_p = args.eval_top_p if args.eval_top_p is not None else default_top_p
 print(f"[Setup] Sampling params -> temperature={temperature}, top_p={top_p}")
 
-# Creates result folders
+# Create result folders
 path_model = (
         PATH_RESULTS
         / args.experiment_name
@@ -297,22 +338,13 @@ for question_format in question_formats:
 ################################################################################################
 # RUN EVALUATION
 ################################################################################################
+
 # Clean memory
 gc.collect()
 torch.cuda.empty_cache()
 
 # Create model
 model = create_model(args.model_name)
-if isinstance(model, BatchSubmitLanguageModel):
-    if not args.batch_submit_output_filename:
-        raise ValueError("Please provide an argument to batch-submit-output-filename!")
-    model.set_filename(args.batch_submit_output_filename)
-if isinstance(model, BatchRetrieveLanguageModel):
-    if not args.batch_retrieve_response_filename:
-        raise ValueError("Please provide an argument to batch-response-filename!")
-    if not args.batch_retrieve_index_filename:
-        raise ValueError("Please provide an argument to batch-index-filename!")
-    model.load_data(args.batch_retrieve_index_filename, args.batch_retrieve_response_filename)
 
 # Create prompter
 prompter = create_prompter(

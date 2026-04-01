@@ -6,7 +6,7 @@ import pandas as pd
 
 from data.templates.question_templates import QUESTION_TEMPLATES
 from data.templates.response_templates import GOOD_TOKENS, OK_TOKENS, BAD_TOKENS
-from src.config import PATH_DATA
+from src.config import PATH_DISTRACTORS
 from src.models.model import LanguageModelResponse
 from src.prompters.prompter import Prompter
 from src.prompters.prompt import Prompt, Scenario, Distractor, Modality, ImagePosition
@@ -30,7 +30,7 @@ class NormBankPrompter(Prompter[Prompt]):
         system = question_template["system"]
         if distractor:
             if distractor["modality"] == Modality.TEXT:
-                file_path = PATH_DATA / distractor["file_path"]
+                file_path = PATH_DISTRACTORS / distractor["file_path"]
                 with open(file_path, "r", encoding="utf-8") as f:
                     distractor_text = f.read().strip()
                 if distractor_text:
@@ -113,11 +113,8 @@ class NormBankPrompter(Prompter[Prompt]):
             "bad_prob": 0.0
         }
 
-        # print("post_process")
         for action, tokens in action_tokens_dict.items():
-            # print(action)
             for token in tokens:
-                # print(token)
                 result[f"{action}_prob"] += response.get_answer_prob(token)
 
         return result

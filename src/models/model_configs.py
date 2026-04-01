@@ -1,8 +1,5 @@
 API_TIMEOUTS = [1, 2, 4, 8, 16, 32]
 
-####################################################################################
-# MODELS DICT
-####################################################################################
 MODELS = {
     "openai/gpt-4.1": {
         "company": "openai",
@@ -11,22 +8,8 @@ MODELS = {
         "8bit": None,
         "likelihood_access": False,
         "endpoint": "ChatCompletion",
-    },
-    "openai/gpt-4.1-batch-submit": {
-        "company": "openai",
-        "model_class": "OpenAIBatchSubmitModel",
-        "model_name": "openai/gpt-4.1-batch-submit",
-        "8bit": None,
-        "likelihood_access": False,
-        "endpoint": "ChatCompletion"
-    },
-    "openai/gpt-4.1-batch-retrieve": {
-        "company": "openai",
-        "model_class": "OpenAIBatchRetrieveModel",
-        "model_name": "openai/gpt-4.1-batch-retrieve",
-        "8bit": None,
-        "likelihood_access": False,
-        "endpoint": "ChatCompletion"
+        "batch_submit_model_class": "OpenAIBatchSubmitModel",
+        "batch_retrieve_model_class": "OpenAIBatchRetrieveModel"
     },
     "Qwen/Qwen3-VL-2B-Instruct": {
         "company": "AliBaba",

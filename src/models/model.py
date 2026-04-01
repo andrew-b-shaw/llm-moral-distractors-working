@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod, ABC
 
+import orjson
 import pandas as pd
 
 from src.config import PATH_DATA
@@ -92,9 +93,10 @@ class BatchRetrieveLanguageModel(LanguageModel, ABC):
         super().__init__(model_name)
         self._indices = {}
 
-    def load_data(self, index_filename: str, response_filename: str):
-        index_df = pd.read_csv(PATH_DATA / index_filename)
-        for i, row in index_df.iterrows():
-            self._indices[row["prompt_id"]] = row["line"]
+    def load_data(self, response_filename: str):
+        # Cache mapping of custom ID to line index
         with open(PATH_DATA / response_filename, 'r') as f:
             self._lines = f.readlines()
+        for i, line in enumerate(self._lines):
+            line_json = orjson.loads(line)
+            self._indices[line_json["custom_id"]] = i

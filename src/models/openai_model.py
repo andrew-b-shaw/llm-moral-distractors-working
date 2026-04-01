@@ -1,15 +1,13 @@
 import math
-import warnings
 
 import orjson
 import tiktoken
 import time
 import json
-import pandas as pd
 
 from openai import OpenAI, ChatCompletion
 
-from src.config import PATH_DATA
+from src.config import PATH_BATCH
 from src.models.model import LanguageModel, LanguageModelResponse, BatchSubmitLanguageModel, BatchRetrieveLanguageModel
 from src.models.model_configs import MODELS, API_TIMEOUTS
 from src.models.model_utils import get_timestamp, get_api_key
@@ -148,7 +146,7 @@ class OpenAIBatchSubmitModel(BatchSubmitLanguageModel):
             temperature: float = 0.7,
             top_p: float = 0.9
     ) -> LanguageModelResponse:
-        with open(PATH_DATA / self._output_filename, 'a') as f:
+        with open(PATH_BATCH / self._output_filename, 'a') as f:
             request = {
                 "custom_id": prompt["id"],
                 "method": "POST",

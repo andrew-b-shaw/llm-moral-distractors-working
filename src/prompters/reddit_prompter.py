@@ -7,7 +7,7 @@ import pandas as pd
 from data.templates.question_templates import QuestionTemplate, QUESTION_TEMPLATES
 from data.templates.response_templates import ESH_TOKENS, YTA_TOKENS, NTA_TOKENS, NAH_TOKENS, INFO_TOKENS
 from src.classifier import ME2BERTScorer
-from src.config import PATH_DATA
+from src.config import PATH_DISTRACTORS
 from src.models.model import LanguageModelResponse, LanguageModel
 from src.prompters.prompter import Prompter
 from src.prompters.prompt import Prompt, Scenario, Distractor, Modality, ImagePosition
@@ -93,7 +93,7 @@ class RedditPrompter(Prompter[Prompt]):
         return normalized_prompt
 
     def _prepend_text_distractor(self, base_prompt: str, distractor: Distractor) -> str:
-        distractor_path = PATH_DATA / distractor["file_path"]
+        distractor_path = PATH_DISTRACTORS / distractor["file_path"]
         with open(distractor_path, "r", encoding="utf-8") as f:
             distractor_text = f.read().strip()
 
