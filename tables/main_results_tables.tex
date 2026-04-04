@@ -5,10 +5,10 @@
 \toprule
 \textbf{Model} & \textbf{Baseline} & \textbf{Positive} & \textbf{Neutral} & \textbf{Negative} \\
 \midrule
-\lm{gemma-3-4b-it} & 63.83\% & \textcolor{mygreen}{65.90\%} & 65.29\% & \textcolor{red}{62.87\%} \\
-\lm{Llama-3.2-3B-Instruct} & 56.09\% & 52.25\% & \textcolor{mygreen}{52.27\%} & \textcolor{red}{51.24\%} \\
-\lm{Qwen3-4B} & 63.87\% & \textcolor{mygreen}{69.13\%} & 66.94\% & \textcolor{red}{61.42\%} \\
-\lm{GPT-4.1} & 70.88\% & \textcolor{mygreen}{71.81\%} & 71.69\% & \textcolor{red}{70.01\%} \\
+\lm{gemma-3-4b-it} & 63.83\% & \textcolor{mygreen}{65.90\%} (p<0.001) & 65.29\% (p<0.001) & \textcolor{red}{62.87\%} (p<0.001) \\
+\lm{Llama-3.2-3B-Instruct} & 56.09\% & 52.25\% (p<0.001) & \textcolor{mygreen}{52.27\%} (p<0.001) & \textcolor{red}{51.24\%} (p<0.001) \\
+\lm{Qwen3-4B} & 63.87\% & \textcolor{mygreen}{69.13\%} (p<0.001) & 66.94\% (p<0.001) & \textcolor{red}{61.42\%} (p<0.001) \\
+\lm{GPT-4.1} & 70.88\% & \textcolor{mygreen}{71.81\%} (p<0.001) & 71.69\% (p<0.001) & \textcolor{red}{70.01\%} (p<0.001) \\
 \bottomrule
 \end{tabular}
 \caption{Mean MMAP across distractor sentiment conditions on \textbf{high-ambiguity MoralChoice scenarios}. Highest values in \textcolor{mygreen}{green}, lowest in \textcolor{red}{red}.}
@@ -22,10 +22,10 @@
 \toprule
 \textbf{Model} & \textbf{Baseline} & \textbf{Positive} & \textbf{Neutral} & \textbf{Negative} \\
 \midrule
-\lm{gemma-3-4b-it} & 97.55\% & \textcolor{mygreen}{98.07\%} & 97.91\% & \textcolor{red}{95.81\%} \\
-\lm{Llama-3.2-3B-Instruct} & 96.20\% & 74.69\% & \textcolor{mygreen}{75.71\%} & \textcolor{red}{66.51\%} \\
-\lm{Qwen3-4B} & 97.98\% & \textcolor{mygreen}{99.05\%} & 98.79\% & \textcolor{red}{86.09\%} \\
-\lm{GPT-4.1} & 99.82\% & \textcolor{mygreen}{99.71\%} & 99.64\% & \textcolor{red}{98.75\%} \\
+\lm{gemma-3-4b-it} & 97.55\% & \textcolor{mygreen}{98.07\%} (p<0.001) & 97.91\% (p<0.001) & \textcolor{red}{95.81\%} (p<0.001) \\
+\lm{Llama-3.2-3B-Instruct} & 96.20\% & 74.69\% (p<0.001) & \textcolor{mygreen}{75.71\%} (p<0.001) & \textcolor{red}{66.51\%} (p<0.001) \\
+\lm{Qwen3-4B} & 97.98\% & \textcolor{mygreen}{99.05\%} (p<0.001) & 98.79\% (p<0.001) & \textcolor{red}{86.09\%} (p<0.001) \\
+\lm{GPT-4.1} & 99.82\% & \textcolor{mygreen}{99.71\%} (p<0.001) & 99.64\% (p<0.001) & \textcolor{red}{98.75\%} (p<0.001) \\
 \bottomrule
 \end{tabular}
 \caption{Mean MMAP across distractor sentiment conditions on \textbf{low-ambiguity MoralChoice scenarios}. Highest values in \textcolor{mygreen}{green}, lowest in \textcolor{red}{red}.}
@@ -39,10 +39,10 @@
 \toprule
 \textbf{Model} & \textbf{Baseline} & \textbf{Positive} & \textbf{Neutral} & \textbf{Negative} \\
 \midrule
-\lm{gemma-3-4b-it} & -10.64\% & \textcolor{mygreen}{-13.04\%} & -16.95\% & \textcolor{red}{-29.31\%} \\
-\lm{Llama-3.2-3B-Instruct} & -75.83\% & \textcolor{mygreen}{-70.19\%} & -75.46\% & \textcolor{red}{-80.84\%} \\
-\lm{Qwen3-4B} & -4.37\% & \textcolor{mygreen}{-5.12\%} & -7.82\% & \textcolor{red}{-25.16\%} \\
-\lm{GPT-4.1} & 5.91\% & \textcolor{mygreen}{0.89\%} & \textcolor{red}{-4.88\%} & -4.22\% \\
+\lm{gemma-3-4b-it} & -10.64\% & \textcolor{mygreen}{-13.04\%} (p=0.001) & -16.95\% (p<0.001) & \textcolor{red}{-29.31\%} (p<0.001) \\
+\lm{Llama-3.2-3B-Instruct} & -75.83\% & \textcolor{mygreen}{-70.19\%} (p<0.001) & -75.46\% (p=0.255) & \textcolor{red}{-80.84\%} (p<0.001) \\
+\lm{Qwen3-4B} & -4.37\% & \textcolor{mygreen}{-5.12\%} (p=0.164) & -7.82\% (p<0.001) & \textcolor{red}{-25.16\%} (p<0.001) \\
+\lm{GPT-4.1} & 5.91\% & \textcolor{mygreen}{0.89\%} (p<0.001) & \textcolor{red}{-4.88\%} (p<0.001) & -4.22\% (p<0.001) \\
 \bottomrule
 \end{tabular}
 \caption{Mean Score (good$-$bad) across distractor sentiment conditions on \textbf{NormBank scenarios}. Highest values in \textcolor{mygreen}{green}, lowest in \textcolor{red}{red}.}
@@ -56,10 +56,10 @@
 \toprule
 \textbf{Model} & \textbf{Baseline} & \textbf{Positive} & \textbf{Neutral} & \textbf{Negative} \\
 \midrule
-\lm{gemma-3-4b-it} & 67.64\% & \textcolor{mygreen}{78.35\%} & 59.10\% & \textcolor{red}{47.04\%} \\
-\lm{Llama-3.2-3B-Instruct} & -25.27\% & -9.60\% & \textcolor{red}{-14.13\%} & \textcolor{mygreen}{-7.34\%} \\
-\lm{Qwen3-4B} & -5.18\% & 50.25\% & \textcolor{red}{47.07\%} & \textcolor{mygreen}{60.19\%} \\
-\lm{GPT-4.1} & 81.17\% & \textcolor{mygreen}{81.41\%} & 81.07\% & \textcolor{red}{79.30\%} \\
+\lm{gemma-3-4b-it} & 67.64\% & \textcolor{mygreen}{78.35\%} (p<0.001) & 59.10\% (p<0.001) & \textcolor{red}{47.04\%} (p<0.001) \\
+\lm{Llama-3.2-3B-Instruct} & -25.27\% & -9.60\% (p<0.001) & \textcolor{red}{-14.13\%} (p<0.001) & \textcolor{mygreen}{-7.34\%} (p<0.001) \\
+\lm{Qwen3-4B} & -5.18\% & 50.25\% (p<0.001) & \textcolor{red}{47.07\%} (p<0.001) & \textcolor{mygreen}{60.19\%} (p<0.001) \\
+\lm{GPT-4.1} & 81.17\% & \textcolor{mygreen}{81.41\%} (p=0.426) & 81.07\% (p=0.746) & \textcolor{red}{79.30\%} (p<0.001) \\
 \bottomrule
 \end{tabular}
 \caption{Mean Score (NTA+NAH$-$YTA$-$ESH) across distractor sentiment conditions on \textbf{Reddit AITA scenarios}. Highest values in \textcolor{mygreen}{green}, lowest in \textcolor{red}{red}.}
