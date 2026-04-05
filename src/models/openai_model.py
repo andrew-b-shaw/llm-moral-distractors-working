@@ -1,3 +1,8 @@
+"""OpenAI Chat API model wrapper with logprob-based answer probability computation.
+
+Includes real-time query (OpenAIModel), batch JSONL submission (OpenAIBatchSubmitModel),
+and batch response retrieval (OpenAIBatchRetrieveModel) for the OpenAI Batch API."""
+
 import math
 
 import orjson
@@ -20,6 +25,9 @@ class OpenAIModelResponse(LanguageModelResponse):
     _top_logprobs: list[dict[str, float]]
 
     def get_answer_prob(self, answer: str) -> float:
+        # Compute P(answer) using the chain rule: P(t1)*P(t2|t1)*...
+        # by summing log-probs from the top-20 logprobs returned by the API.
+        # Returns 0 if any token is outside the top-20.
         answer_tokens = [self._tokenizer.decode([token_id]) for token_id in self._tokenizer.encode(answer)]
         if len(answer_tokens) > len(self._top_logprobs):
             return 0.0
@@ -108,6 +116,7 @@ class OpenAIModel(LanguageModel):
             {"role": "system", "content": prompt["system_prompt"]},
             {"role": "user", "content": prompt["user_prompt"]}
         ]
+        # Exponential backoff: retry on API errors with increasing delays
         success = False
         t = 0
         while not success:

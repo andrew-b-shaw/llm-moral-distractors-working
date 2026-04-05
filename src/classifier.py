@@ -1,3 +1,9 @@
+"""Wrapper around the ME2-BERT moral foundations classifier (lorenzozan/ME2-BERT).
+
+Scores text for five Moral Foundations Theory dimensions -- care/harm (CH),
+fairness/cheating (FC), loyalty/betrayal (LB), authority/subversion (AS), and
+purity/degradation (PD). Used by RedditPrompter to score model reasoning."""
+
 from __future__ import annotations
 
 import logging

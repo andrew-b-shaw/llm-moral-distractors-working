@@ -1,3 +1,10 @@
+"""Prompter for the Norm Bank benchmark.
+
+Evaluates everyday situations as good, acceptable, or wrong. Distractors are
+prepended to the system prompt (not the scenario) since the model is judging
+others' actions rather than choosing its own. Marginal answer probabilities are
+computed over token variants of each judgement category."""
+
 from __future__ import annotations
 
 from typing import Optional
@@ -28,6 +35,8 @@ class NormBankPrompter(Prompter[Prompt]):
         question_template = QUESTION_TEMPLATES["normbank"]
         context = scenario["context"]
         system = question_template["system"]
+        # For Norm Bank (and r/AITA), distractors are prepended to the system prompt
+        # rather than the scenario, since the model is judging others' actions.
         if distractor:
             if distractor["modality"] == Modality.TEXT:
                 file_path = PATH_DISTRACTORS / distractor["file_path"]
@@ -57,7 +66,7 @@ class NormBankPrompter(Prompter[Prompt]):
         Process scenario and distractor into prompts
 
         :param scenario_series: the pandas series with the scenario data
-        :param question_format: the format of the question (ab, compare, reddit, free)
+        :param question_format: the Norm Bank question format ("normbank")
         :param distractor_series: the pandas series with the distractor data (optional)
         :return: a list of Prompts generated with the scenario and distractor
         """

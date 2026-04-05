@@ -1,3 +1,9 @@
+"""Abstract base classes for language models and their responses.
+
+Defines LanguageModel (the query interface all model backends implement),
+LanguageModelResponse (wraps answer text and token-level answer probability access),
+and batch submit/retrieve variants for the OpenAI Batch API workflow."""
+
 from __future__ import annotations
 
 from abc import abstractmethod, ABC
@@ -59,15 +65,13 @@ class LanguageModel:
         top_p: float = 0.9
     ) -> LanguageModelResponse:
         """
-        Gets answer using sampling (based on top_p and temperature)
+        Query the model and return a response with answer text and answer-probability access.
 
-        :param distractor:      the distractor to inject
-        :param user_prompt:     base prompt
-        :param prompt_sytem:    system instruction for chat endpoint of OpenAI
-        :param max_new_tokens       max tokens in answer
-        :param temperature      temperature for top_p sampling
-        :param top_p            top_p parameter
-        :return:                answer string
+        :param prompt:       the Prompt containing system/user prompts and distractor info
+        :param max_tokens:   max tokens in answer
+        :param temperature:  temperature for sampling
+        :param top_p:        top_p parameter for nucleus sampling
+        :return:             LanguageModelResponse with answer text and answer-probability access
         """
         pass
 

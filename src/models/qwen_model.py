@@ -1,3 +1,8 @@
+"""HuggingFace Qwen 3 text-only model wrapper.
+
+Loads the model via transformers, generates with top-p sampling, and computes
+token-level logit probabilities for answer probability extraction."""
+
 from __future__ import annotations
 
 import torch
@@ -39,8 +44,9 @@ class QwenModelResponse(LanguageModelResponse):
         :param answer: the string to calculate the probability of
         :return: the probability that the output **starts** with the given string
         """
+        # Unlike Llama/Gemma, the Qwen tokenizer does not prepend a BOS token,
+        # so we iterate from index 0 (no skip needed).
         token_ids = self._tokenizer.encode(answer)
-        # breakpoint()
         if len(token_ids) > len(self._output.logits):
             return 0.0
 
@@ -57,7 +63,7 @@ class QwenModelResponse(LanguageModelResponse):
         return math.exp(answer_log_prob)
 
 class QwenModel(LanguageModel):
-    """Gemma 3 Model Wrapper --> Supports text + image prompts"""
+    """Qwen 3 Model Wrapper"""
 
     def __init__(self, model_name: str):
         super().__init__(model_name)
@@ -88,15 +94,14 @@ class QwenModel(LanguageModel):
         enable_thinking: bool = False
     ) -> QwenModelResponse:
         """
-        Query Gemma model (with top-p decoding)
+        Query Qwen model (with top-p decoding)
 
-        :param system_prompt: the system prompt to query the model with
-        :param user_prompt: the user prompt to query the model with
+        :param prompt: the Prompt to query the model with
         :param max_tokens: the max output tokens
         :param temperature: the temperature to generate outputs with
         :param top_p: the probability to use for top_p decoding
-        :param distractor: the distractor to inject (optional)
-        :return: a GemmaModelResponse with the model output
+        :param enable_thinking: whether to enable Qwen's thinking mode
+        :return: a QwenModelResponse with the model output
         """
 
         distractor = prompt["distractor"]
@@ -109,6 +114,8 @@ class QwenModel(LanguageModel):
                 {"role": "system", "content": prompt["system_prompt"]},
                 {"role": "user", "content": prompt["user_prompt"]}
             ]
+            # Disable Qwen's thinking/reasoning mode so the model responds
+            # directly; reasoning ablations use a separate configuration.
             text_prompt = self._tokenizer.apply_chat_template(
                 messages,
                 tokenize=False,

@@ -1,3 +1,5 @@
+"""Shared utility functions for model backends: API key retrieval and timestamps."""
+
 import os
 from datetime import datetime
 

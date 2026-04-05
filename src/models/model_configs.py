@@ -1,3 +1,9 @@
+"""Registry of supported model configurations.
+
+Each entry maps a model identifier to provider metadata, Python class names,
+backend endpoint settings, and capability flags.
+API_TIMEOUTS defines the exponential backoff schedule for API retries."""
+
 API_TIMEOUTS = [1, 2, 4, 8, 16, 32]
 
 MODELS = {
@@ -130,15 +136,6 @@ MODELS = {
         "8bit": False,
         "likelihood_access": True,
         "endpoint": None,
-    },
-    "ollama/gemma3-4b": {
-        "company": "ollama",
-        "model_class": "OllamaModel",
-        "model_name": "ollama/gemma3-4b",
-        "ollama_model": "gemma3:4b",
-        "8bit": False,
-        "likelihood_access": False,
-        "endpoint": "ollama",
     },
     "meta-llama/Llama-3.2-3B-Instruct": {
         "company": "Meta",

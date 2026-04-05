@@ -1,3 +1,9 @@
+"""Prompter for the MoralChoice benchmark.
+
+Constructs A/B forced-choice prompts with both answer orderings per scenario,
+injects textual or visual distractors with temporal distance, and computes
+per-action probabilities by marginalizing over token variants (e.g. 'A', ' a', '[A]')."""
+
 from __future__ import annotations
 
 from typing import Optional
@@ -31,7 +37,7 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
     ) -> MoralChoicePrompt:
         """
         Generate a prompt from the given information
-        :param question_format: the format of the question ("ab", "compare", "free")
+        :param question_format: the MoralChoice question format ("ab" or "compare")
         :param question_ordering: the ordering of the options (0, 1)
         :param scenario: the Scenario to prompt with
         :param distractor: the Distractor to prompt with
@@ -40,6 +46,9 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
 
         question_template = QUESTION_TEMPLATES[f"{question_format}_moralchoice"]
         context = scenario["context"]
+        # Inject distractor into the scenario context with temporal distance
+        # (e.g. "{distractor text}. Later, {scenario}") to add another layer
+        # of moral irrelevance between the distractor and the dilemma.
         if distractor:
             if distractor["modality"] == Modality.TEXT:
                 file_path = PATH_DISTRACTORS / distractor["file_path"]
@@ -78,7 +87,7 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
         Process scenario and distractor into prompts
 
         :param scenario_series: the pandas series with the scenario data
-        :param question_format: the format of the question (ab, compare, reddit, free)
+        :param question_format: the MoralChoice question format ("ab" or "compare")
         :param distractor_series: the pandas series with the distractor data (optional)
         :return: a list of Prompts generated with the scenario and distractor
         """
@@ -98,7 +107,8 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
             "actions": [scenario_series["action1"], scenario_series["action2"]]
         }
 
-        # Generate prompts with all orderings
+        # Generate prompts with both answer orderings (action1 as A then as B)
+        # to control for position bias; results are averaged across orderings.
         prompts = []
         for question_ordering in [0, 1]:
             prompt = self._generate_prompt(
@@ -123,8 +133,11 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
         :return: the results as a dict
         """
 
+        # Map model output tokens back to canonical action indices (a1, a2).
+        # question_ordering tracks which action was presented as option A:
+        #   ordering=0 -> A=action1, B=action2
+        #   ordering=1 -> A=action2, B=action1
         if prompt["question_format"].startswith("ab"):
-            # A/B question format
             action_tokens_dict = {
                 "A": A_TOKENS,
                 "B": B_TOKENS
@@ -134,7 +147,6 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
                 "B": 1 - prompt["question_ordering"]
             }
         else:
-            # YES/NO question format
             action_tokens_dict = {
                 "YES": YES_TOKENS,
                 "NO": NO_TOKENS
@@ -143,7 +155,6 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
                 "YES": prompt["question_ordering"],
                 "NO": 1 - prompt["question_ordering"]
             }
-        # TODO: incorporate LLM-as-judge for open-ended generation
 
         result = {
             "model_id": self.model.get_model_id(),

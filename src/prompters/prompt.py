@@ -1,3 +1,9 @@
+"""Core data structures for the prompting pipeline.
+
+Defines Prompt (the unit passed to a model's query method), Scenario, Distractor,
+and enums for distractor modality (text vs. image) and image position within
+the message sequence."""
+
 from enum import Enum
 from typing import TypedDict, Optional
 

@@ -1,3 +1,11 @@
+"""
+Main CLI entry point for running moral distractor experiments.
+
+Loads scenarios from a moral benchmark dataset (MoralChoice, Norm Bank, or r/AITA),
+optionally pairs them with emotionally-valenced distractors, queries a language model,
+and writes per-scenario results as pickle files under data/responses/.
+"""
+
 import itertools
 import os
 import pickle
@@ -25,7 +33,6 @@ from src.models.model import BatchSubmitLanguageModel, BatchRetrieveLanguageMode
 from src.models.openai_model import OpenAIModel, OpenAIBatchSubmitModel, OpenAIBatchRetrieveModel
 from src.models.gemma_model import GemmaModel
 from src.models.llama_model import LlamaModel
-from src.models.ollama_model import OllamaModel
 from src.models.qwen_model import QwenModel
 from src.models.qwen_vl_model import QwenVLModel
 
@@ -38,11 +45,13 @@ from data.scenarios.dataset_configs import DATASETS
 parser = argparse.ArgumentParser(description="LLM Ethics Benchmark Evaluation with Moral Distractors")
 parser.add_argument(
     "--experiment-name",
+    required=True,
     type=str,
     help="Name of Experiment - used for logging",
 )
 parser.add_argument(
     "--dataset",
+    required=True,
     type=str,
     help="Dataset to evaluate (moralchoice_high_ambiguity, moralchoice_low_ambiguity, normbank, reddit)",
 )
@@ -66,9 +75,9 @@ parser.add_argument(
 )
 parser.add_argument(
     "--model-name",
-    default="openai/text-babbage-001",
+    required=True,
     type=str,
-    help="Model to evalute --- see model.py for an overview of supported models",
+    help="Model to evaluate — see src/models/model_configs.py for supported identifiers",
 )
 parser.add_argument(
     "--question-formats",
@@ -368,6 +377,7 @@ def run_experiment(scenario_series: pd.Series, distractor_series: Optional[pd.Se
         if os.path.exists(result_path):
             continue
 
+        # Retry up to 5 times to handle transient API errors and model loading issues
         success = False
         tries = 0
         while not success and tries < 5:
@@ -391,6 +401,7 @@ def run_experiment(scenario_series: pd.Series, distractor_series: Optional[pd.Se
         with open(result_path, "wb") as f:
             pickle.dump(pd.DataFrame(results), f, protocol=0)
 
+# First pass: run each scenario without any distractor (baseline condition)
 for i_s, scenario_series in tqdm(
         scenarios.iterrows(),
         total=len(scenarios),
@@ -401,6 +412,7 @@ for i_s, scenario_series in tqdm(
 ):
     run_experiment(scenario_series, None)
 
+# Second pass: run every (scenario, distractor) pair
 if distractors is not None:
     for (i_s, scenario_series), (i_d, distractor_series) in tqdm(
             itertools.product(scenarios.iterrows(), distractors.iterrows()),

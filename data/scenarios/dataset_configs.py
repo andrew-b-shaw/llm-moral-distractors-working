@@ -1,3 +1,6 @@
+"""Dataset registry mapping dataset names to their prompter classes, scenario paths,
+default question formats, sampling parameters, and distractor support flags."""
+
 from src.config import PATH_SCENARIOS
 
 DATASETS = {

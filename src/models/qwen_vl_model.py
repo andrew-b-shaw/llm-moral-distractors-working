@@ -1,3 +1,8 @@
+"""HuggingFace Qwen 3 VL (vision-language) model wrapper.
+
+Handles interleaved image+text prompts using AutoModelForImageTextToText and
+the qwen_vl_utils.process_vision_info helper for image preprocessing."""
+
 import os
 import torch
 import math
@@ -15,7 +20,7 @@ from src.prompters.prompt import Modality, Prompt, ImagePosition
 
 
 class QwenVLModel(LanguageModel):
-    """Qwen 3 Model Wrapper"""
+    """Hugging Face Qwen 3 VL (vision-language) backend."""
 
     def __init__(self, model_name: str):
         super().__init__(model_name)
@@ -107,9 +112,8 @@ class QwenVLModel(LanguageModel):
                 return_dict_in_generate=True,
             )
 
-        # Parse Output
         answer_raw = self._processor.decode(response.sequences[0], skip_special_tokens=True).strip()
-        answer = answer_raw[len(prompt) - 1:]
+        answer = answer_raw[len(text_prompt):].strip()
 
         return QwenModelResponse(
             timestamp=get_timestamp(),

@@ -1,4 +1,10 @@
-"""Response Collection: Aggregate Model Responses into a single csv per model"""
+"""Aggregate per-scenario pickle result files from evaluate.py into a single CSV per model.
+
+Walks ``data/responses/<experiment>/<dataset>_raw/``, loads ``.pickle`` files whose
+names contain a modality hint (``txt``, ``img``, or ``none`` for baseline ``d_none``),
+concatenates them, and writes one CSV per ``model_id`` under ``data/csv_results/``.
+This matches ``evaluate.py`` filenames ``s_<scenario>_d_<distractor>.pickle`` with
+current distractor ids (``txt_*``, ``img_*``)."""
 
 import os
 import pickle
@@ -20,7 +26,10 @@ parser.add_argument(
     help="Name of Experiment - used for logging",
 )
 parser.add_argument(
-    "--dataset", default="high", type=str, help="Dataset to evaluate (low or high)"
+    "--dataset",
+    default="moralchoice_low_ambiguity",
+    type=str,
+    help="Dataset key (same as evaluate.py: moralchoice_high_ambiguity, moralchoice_low_ambiguity, normbank, reddit)",
 )
 parser.add_argument(
     "--distractors", default="all", type=str, help="Which distractors to collect (image, text, all, none)"
@@ -58,6 +67,12 @@ for path, subdirs, files in os.walk(path_results_raw):
             with open(path_file, "rb") as f:
                 tmp = pickle.load(f)
                 results.append(tmp)
+
+if not results:
+    raise SystemExit(
+        f"No matching .pickle files under {path_results_raw!r}. "
+        "Check --experiment-name, --dataset, and --distractors."
+    )
 
 df_results = pd.concat(results)
 

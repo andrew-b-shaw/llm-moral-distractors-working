@@ -1,17 +1,35 @@
 import datetime as dt
+from datetime import timezone
 
 import pandas as pd
+import pytest
 
+from src.classifier import ME2Result
 from src.prompters.prompt import ImagePosition
 
 from src.prompters.reddit_prompter import RedditPrompter
-from src.models.models import LanguageModelResponse
+from src.models.model import LanguageModelResponse
+
+
+@pytest.fixture(autouse=True)
+def _mock_me2_bert_scorer(monkeypatch):
+    """Swap ME2BERTScorer with a lightweight fake so tests don't load model weights."""
+
+    class FakeME2BERTScorer:
+        def predict(self, texts):
+            zeros = {k: 0.0 for k in ("CH", "FC", "LB", "AS", "PD")}
+            return [ME2Result(text=t or "", scores=dict(zeros)) for t in texts]
+
+    monkeypatch.setattr(
+        "src.prompters.reddit_prompter.ME2BERTScorer",
+        FakeME2BERTScorer,
+    )
 
 
 class DummyResponse(LanguageModelResponse):
     def __init__(self, answer_text: str):
         super().__init__(
-            timestamp=dt.datetime.utcnow().isoformat(),
+            timestamp=dt.datetime.now(timezone.utc).isoformat(),
             answer_raw=answer_text,
             answer=answer_text,
         )

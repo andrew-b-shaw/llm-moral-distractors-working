@@ -1,3 +1,8 @@
+"""HuggingFace Llama 3.2 model wrapper.
+
+Loads the model via transformers, generates with top-p sampling, and computes
+token-level logit probabilities for answer probability extraction."""
+
 import math
 import os
 
@@ -34,13 +39,15 @@ class LlamaModelResponse(LanguageModelResponse):
         self._tokenizer = tokenizer
 
     def get_answer_prob(self, answer: str) -> float:
+        # Compute P(answer) via chain rule over generated logits.
+        # Skip token_ids[0] (BOS token added by the tokenizer).
         token_ids = self._tokenizer(answer).input_ids
         if len(token_ids) - 1 > len(self._output.logits):
             return 0.0
 
         answer_log_prob = 0.0
         for i in range(len(token_ids) - 1):
-            token_id = token_ids[i + 1]  # first token ID is BOS
+            token_id = token_ids[i + 1]
             logits = self._output.logits[i]
             token_probs = torch.softmax(logits, dim=1).squeeze()
             token_prob = token_probs[token_id].item()

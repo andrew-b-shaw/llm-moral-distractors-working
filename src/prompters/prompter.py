@@ -1,3 +1,9 @@
+"""Abstract Prompter base class defining the pre_process -> query -> post_process pipeline.
+
+Each dataset (MoralChoice, Norm Bank, r/AITA) implements a concrete Prompter subclass
+that converts pandas scenario/distractor rows into Prompt dicts, queries the model,
+and extracts structured results (answer probabilities, verdicts, etc.) from responses."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -40,7 +46,7 @@ class Prompter(Generic[AnyPrompt]):
         Process scenario and distractor into prompts
 
         :param scenario_series: the pandas series with the scenario data
-        :param question_format: the question format (ab, compare, reddit, free)
+        :param question_format: the dataset-specific question format key
         :param distractor_series: the pandas series with the distractor data (optional)
         :return: a list of Prompts generated with the scenario and distractor
         """
@@ -71,7 +77,7 @@ class Prompter(Generic[AnyPrompt]):
         Prompts the model with the given scenario and distractor data
 
         :param scenario_series: the pandas series with the scenario data
-        :param question_format: the format of the question (ab, compare, reddit, free)
+        :param question_format: the dataset-specific question format key
         :param distractor_series: the pandas series with the distractor data
         :return: the results from the generated prompts
         """

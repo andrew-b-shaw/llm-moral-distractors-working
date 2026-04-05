@@ -1,3 +1,8 @@
+"""HuggingFace Gemma 3 model wrapper supporting both text and image inputs.
+
+Text-only Gemma variants use the tokenizer directly; vision-capable variants
+use the AutoProcessor to handle interleaved image+text prompts."""
+
 from __future__ import annotations
 
 import torch
@@ -40,14 +45,16 @@ class GemmaModelResponse(LanguageModelResponse):
         :param answer: the string to calculate the probability of
         :return: the probability that the output **starts** with the given string
         """
+        # Compute P(answer) via chain rule over generated logits.
+        # Skip token_ids[0] (BOS token added by the tokenizer).
         token_ids = self._tokenizer.encode(answer)
         if len(token_ids) > len(self._output.logits):
             return 0.0
 
         answer_log_prob = 0.0
         for i in range(len(token_ids) - 1):
-            token_id = token_ids[i + 1]  # first token ID is BOS
-            logits = self._output.logits[i]  # last token ID is EOS
+            token_id = token_ids[i + 1]
+            logits = self._output.logits[i]
             token_probs = torch.softmax(logits, dim=1).squeeze()
             token_prob = token_probs[token_id].item()
             if token_prob == 0.0:
@@ -97,12 +104,10 @@ class GemmaModel(LanguageModel):
         """
         Query Gemma model (with top-p decoding)
 
-        :param system_prompt: the system prompt to query the model with
-        :param user_prompt: the user prompt to query the model with
+        :param prompt: the Prompt to query the model with
         :param max_tokens: the max output tokens
         :param temperature: the temperature to generate outputs with
         :param top_p: the probability to use for top_p decoding
-        :param distractor: the distractor to inject (optional)
         :return: a GemmaModelResponse with the model output
         """
 

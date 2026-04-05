@@ -1,4 +1,5 @@
-"""PATH CONFIG"""
+"""Central path configuration for the project. All data, cache, and output paths are
+defined relative to the repository root."""
 
 from pathlib import Path
 
@@ -16,6 +17,4 @@ PATH_DISTRACTORS = PATH_DATA / "distractors"
 PATH_RESULTS = PATH_DATA / "responses"
 PATH_CSV_RESULTS = PATH_DATA / "csv_results"
 PATH_BATCH = PATH_DATA / "batch"
-PATH_QUESTION_TEMPLATES = PATH_DATA / "question_templates"
-PATH_RESPONSE_TEMPLATES = PATH_DATA / "response_templates"
 PATH_FIG = ROOT / "fig"

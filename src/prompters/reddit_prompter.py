@@ -1,3 +1,11 @@
+"""Prompter for the Reddit-style verdict benchmark.
+
+Prompts the model to return one of five verdicts (YTA, NTA, ESH, NAH, INFO) with
+reasoning. Distractors are prepended to the system prompt. Post-processing extracts
+the verdict and reasoning via regex, computes marginal verdict probabilities over
+token variants, and scores the reasoning text for moral foundations using the
+ME2-BERT classifier."""
+
 from __future__ import annotations
 
 import re
@@ -123,8 +131,13 @@ class RedditPrompter(Prompter[Prompt]):
     ) -> dict[str, any]:
         distractor = prompt["distractor"]
         response_text = self._get_response_text(response)
+        # Extract structured verdict (YTA/NTA/ESH/NAH/INFO) and free-text reasoning
+        # from the model's response using regex patterns
         verdict, verdict_idx = self._extract_verdict(response_text)
         reasoning = self._extract_reasoning(response_text, verdict_idx)
+        # Score the reasoning text for Moral Foundations Theory dimensions
+        # (care/harm, fairness/cheating, loyalty/betrayal, authority/subversion,
+        # purity/degradation) using the ME2-BERT classifier
         me2_result = self._me2_bert_scorer.predict([reasoning])[0]
 
         verdict_answer_mapping = {

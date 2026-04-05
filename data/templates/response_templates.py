@@ -1,3 +1,10 @@
+"""Token variant lists for token-level answer probability marginalization.
+
+When computing the probability that a model selected a particular answer (e.g. "A"),
+we sum the probabilities across all formatting variants the model might produce
+(e.g. "A", " a", "[A]", "(A)"). This accounts for variations in casing, leading
+whitespace, and markdown formatting that differ across models."""
+
 A_TOKENS = ["A", "a", "[A]", "(A)", "*A*", "**A**",
             " A", " a", " [A]", " (A)", " *A*", " **A**"]
 B_TOKENS = ["B", "b", "[B]", "(B)", "*B*", "**B**",
