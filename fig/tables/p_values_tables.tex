@@ -1,0 +1,173 @@
+\begin{table*}[!h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model} & \textbf{Positive vs. Baseline} & \textbf{Neutral vs. Baseline} & \textbf{Negative vs. Baseline} & \textbf{Positive vs. Neutral} & \textbf{Negative vs. Neutral} & \textbf{Positive vs. Negative} \\
+\midrule
+\lm{gemma-3-4b-it} & $1.83e-02$ & $5.69e-01$ & $9.99e-01$ & $6.32e-01$ & $7.49e-22$ & $1.15e-34$ \\
+\lm{Llama-3.2-3B-Instruct} & $3.55e-14$ & $6.04e-14$ & $6.20e-23$ & $1.00e+00$ & $2.74e-05$ & $3.93e-05$ \\
+\lm{Qwen3-4B} & $1.43e-19$ & $3.08e-06$ & $8.68e-03$ & $3.44e-19$ & $6.74e-106$ & $1.93e-205$ \\
+\lm{GPT-4.1} & $9.97e-01$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $6.93e-12$ & $8.01e-14$ \\
+gemma-3-4b-it-visual & $9.94e-01$ & $1.00e+00$ & $9.35e-01$ & $6.59e-01$ & $1.67e-10$ & $1.01e-19$ \\
+Qwen3-VL-4B-Instruct & $1.41e-03$ & $7.30e-04$ & $1.75e-01$ & $1.00e+00$ & $1.19e-01$ & $3.76e-01$ \\
+\bottomrule
+\end{tabular}
+\caption{Mean MMAP across distractor sentiment conditions on \textbf{high-ambiguity MoralChoice scenarios all}. Highest values in \textcolor{mygreen}{green}, lowest in \textcolor{red}{red}.}
+\label{tab:main-high-ambiguity}
+\end{table*}
+
+\begin{table*}[!h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model} & \textbf{Positive vs. Baseline} & \textbf{Neutral vs. Baseline} & \textbf{Negative vs. Baseline} & \textbf{Positive vs. Neutral} & \textbf{Negative vs. Neutral} & \textbf{Positive vs. Negative} \\
+\midrule
+\lm{gemma-3-4b-it} & $2.36e-02$ & $6.82e-01$ & $6.80e-11$ & $5.24e-01$ & $1.76e-117$ & $6.78e-135$ \\
+\lm{Llama-3.2-3B-Instruct} & $0.00e+00$ & $0.00e+00$ & $0.00e+00$ & $4.14e-19$ & $0.00e+00$ & $0.00e+00$ \\
+\lm{Qwen3-4B} & $5.68e-14$ & $5.54e-07$ & $2.72e-105$ & $9.03e-05$ & $0.00e+00$ & $0.00e+00$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $9.70e-01$ & $1.64e-08$ & $9.86e-01$ & $5.26e-51$ & $6.25e-61$ \\
+gemma-3-4b-it-visual & $2.93e-01$ & $9.49e-01$ & $3.47e-08$ & $1.00e+00$ & $4.40e-85$ & $1.79e-93$ \\
+Qwen3-VL-4B-Instruct & $7.44e-02$ & $9.58e-01$ & $9.01e-02$ & $5.24e-01$ & $6.05e-32$ & $1.92e-43$ \\
+\bottomrule
+\end{tabular}
+\caption{Mean MMAP across distractor sentiment conditions on \textbf{low-ambiguity MoralChoice scenarios all}. Highest values in \textcolor{mygreen}{green}, lowest in \textcolor{red}{red}.}
+\label{tab:main-low-ambiguity}
+\end{table*}
+
+\begin{table*}[!h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model} & \textbf{Positive vs. Baseline} & \textbf{Neutral vs. Baseline} & \textbf{Negative vs. Baseline} & \textbf{Positive vs. Neutral} & \textbf{Negative vs. Neutral} & \textbf{Positive vs. Negative} \\
+\midrule
+\lm{gemma-3-4b-it} & $1.00e+00$ & $6.92e-03$ & $1.00e+00$ & $2.17e-19$ & $8.38e-06$ & $4.10e-01$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.99e-13$ & $1.18e-03$ & $1.00e+00$ & $2.24e-11$ & $6.39e-22$ & $3.82e-59$ \\
+\lm{Qwen3-4B} & $2.45e-02$ & $9.98e-01$ & $1.00e+00$ & $4.75e-05$ & $1.74e-01$ & $2.03e-14$ \\
+\lm{GPT-4.1} & $9.02e-01$ & $1.11e-04$ & $5.08e-09$ & $1.98e-10$ & $1.62e-04$ & $1.00e-29$ \\
+\bottomrule
+\end{tabular}
+\caption{Mean Score (good$-$bad) across distractor sentiment conditions on \textbf{NormBank scenarios good}. Highest values in \textcolor{mygreen}{green}, lowest in \textcolor{red}{red}.}
+\label{tab:main-normbank}
+\end{table*}
+
+\begin{table*}[!h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model} & \textbf{Positive vs. Baseline} & \textbf{Neutral vs. Baseline} & \textbf{Negative vs. Baseline} & \textbf{Positive vs. Neutral} & \textbf{Negative vs. Neutral} & \textbf{Positive vs. Negative} \\
+\midrule
+\lm{gemma-3-4b-it} & $9.94e-01$ & $9.99e-01$ & $3.57e-21$ & $7.27e-15$ & $1.86e-168$ & $7.74e-87$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.00e+00$ & $2.13e-05$ & $8.87e-23$ & $8.16e-45$ & $1.31e-30$ & $4.09e-126$ \\
+\lm{Qwen3-4B} & $5.11e-08$ & $1.52e-06$ & $4.26e-71$ & $5.49e-01$ & $5.88e-166$ & $8.03e-119$ \\
+\lm{GPT-4.1} & $9.85e-01$ & $3.60e-01$ & $9.70e-01$ & $8.72e-01$ & $2.94e-26$ & $4.81e-18$ \\
+\bottomrule
+\end{tabular}
+\caption{Mean Score (good$-$bad) across distractor sentiment conditions on \textbf{NormBank scenarios ok}. Highest values in \textcolor{mygreen}{green}, lowest in \textcolor{red}{red}.}
+\label{tab:main-normbank}
+\end{table*}
+
+\begin{table*}[!h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model} & \textbf{Positive vs. Baseline} & \textbf{Neutral vs. Baseline} & \textbf{Negative vs. Baseline} & \textbf{Positive vs. Neutral} & \textbf{Negative vs. Neutral} & \textbf{Positive vs. Negative} \\
+\midrule
+\lm{gemma-3-4b-it} & $9.52e-01$ & $9.98e-01$ & $1.67e-27$ & $1.00e+00$ & $6.50e-140$ & $1.07e-127$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.08e-04$ & $9.95e-01$ & $1.31e-15$ & $1.37e-57$ & $5.50e-52$ & $4.61e-190$ \\
+\lm{Qwen3-4B} & $4.37e-04$ & $3.08e-06$ & $4.86e-84$ & $9.99e-01$ & $3.99e-267$ & $1.39e-274$ \\
+\lm{GPT-4.1} & $1.90e-03$ & $1.20e-11$ & $1.87e-03$ & $3.83e-18$ & $4.01e-09$ & $9.93e-01$ \\
+\bottomrule
+\end{tabular}
+\caption{Mean Score (good$-$bad) across distractor sentiment conditions on \textbf{NormBank scenarios bad}. Highest values in \textcolor{mygreen}{green}, lowest in \textcolor{red}{red}.}
+\label{tab:main-normbank}
+\end{table*}
+
+\begin{table*}[!h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model} & \textbf{Positive vs. Baseline} & \textbf{Neutral vs. Baseline} & \textbf{Negative vs. Baseline} & \textbf{Positive vs. Neutral} & \textbf{Negative vs. Neutral} & \textbf{Positive vs. Negative} \\
+\midrule
+\lm{gemma-3-4b-it} & $1.11e-06$ & $1.00e+00$ & $1.00e+00$ & $2.62e-40$ & $9.70e-01$ & $3.47e-40$ \\
+\lm{Llama-3.2-3B-Instruct} & $6.90e-40$ & $4.91e-28$ & $2.47e-52$ & $1.20e-07$ & $2.25e-66$ & $2.28e-31$ \\
+\lm{Qwen3-4B} & $1.52e-64$ & $4.09e-64$ & $8.01e-131$ & $9.80e-01$ & $8.26e-56$ & $7.89e-71$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\bottomrule
+\end{tabular}
+\caption{Mean Score (NTA+NAH$-$YTA$-$ESH) across distractor sentiment conditions on \textbf{Reddit AITA scenarios yta}. Highest values in \textcolor{mygreen}{green}, lowest in \textcolor{red}{red}.}
+\label{tab:main-reddit}
+\end{table*}
+
+\begin{table*}[!h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model} & \textbf{Positive vs. Baseline} & \textbf{Neutral vs. Baseline} & \textbf{Negative vs. Baseline} & \textbf{Positive vs. Neutral} & \textbf{Negative vs. Neutral} & \textbf{Positive vs. Negative} \\
+\midrule
+\lm{gemma-3-4b-it} & $1.65e-04$ & $2.49e-01$ & $3.35e-05$ & $2.56e-62$ & $1.80e-12$ & $2.02e-102$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.97e-15$ & $1.79e-07$ & $2.66e-12$ & $6.43e-14$ & $1.38e-13$ & $1.00e+00$ \\
+\lm{Qwen3-4B} & $3.43e-76$ & $1.11e-58$ & $6.06e-78$ & $4.60e-01$ & $6.58e-20$ & $1.30e-10$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $1.00e+00$ & $8.97e-01$ & $1.00e+00$ & $4.45e-10$ & $7.14e-13$ \\
+\bottomrule
+\end{tabular}
+\caption{Mean Score (NTA+NAH$-$YTA$-$ESH) across distractor sentiment conditions on \textbf{Reddit AITA scenarios nta}. Highest values in \textcolor{mygreen}{green}, lowest in \textcolor{red}{red}.}
+\label{tab:main-reddit}
+\end{table*}
+
+\begin{table*}[!h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model} & \textbf{Positive vs. Baseline} & \textbf{Neutral vs. Baseline} & \textbf{Negative vs. Baseline} & \textbf{Positive vs. Neutral} & \textbf{Negative vs. Neutral} & \textbf{Positive vs. Negative} \\
+\midrule
+\lm{gemma-3-4b-it} & $1.00e+00$ & $1.05e-01$ & $1.72e-05$ & $7.26e-11$ & $4.14e-16$ & $2.32e-43$ \\
+\lm{Llama-3.2-3B-Instruct} & $5.93e-02$ & $1.43e-02$ & $5.44e-07$ & $1.00e+00$ & $5.08e-09$ & $3.63e-12$ \\
+\lm{Qwen3-4B} & $1.13e-02$ & $1.00e+00$ & $8.84e-01$ & $2.18e-13$ & $1.30e-06$ & $5.11e-31$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $1.00e+00$ & $9.96e-01$ & $1.00e+00$ & $5.93e-02$ & $4.00e-01$ \\
+\bottomrule
+\end{tabular}
+\caption{Mean Score (NTA+NAH$-$YTA$-$ESH) across distractor sentiment conditions on \textbf{Reddit AITA scenarios esh}. Highest values in \textcolor{mygreen}{green}, lowest in \textcolor{red}{red}.}
+\label{tab:main-reddit}
+\end{table*}
+
+\begin{table*}[!h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model} & \textbf{Positive vs. Baseline} & \textbf{Neutral vs. Baseline} & \textbf{Negative vs. Baseline} & \textbf{Positive vs. Neutral} & \textbf{Negative vs. Neutral} & \textbf{Positive vs. Negative} \\
+\midrule
+\lm{gemma-3-4b-it} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $9.70e-01$ & $1.00e+00$ & $1.00e+00$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\lm{Qwen3-4B} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $5.95e-06$ & $1.27e-08$ \\
+\bottomrule
+\end{tabular}
+\caption{Mean Score (NTA+NAH$-$YTA$-$ESH) across distractor sentiment conditions on \textbf{Reddit AITA scenarios nah}. Highest values in \textcolor{mygreen}{green}, lowest in \textcolor{red}{red}.}
+\label{tab:main-reddit}
+\end{table*}
+
+\begin{table*}[!h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model} & \textbf{Positive vs. Baseline} & \textbf{Neutral vs. Baseline} & \textbf{Negative vs. Baseline} & \textbf{Positive vs. Neutral} & \textbf{Negative vs. Neutral} & \textbf{Positive vs. Negative} \\
+\midrule
+\lm{gemma-3-4b-it} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\lm{Qwen3-4B} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $8.97e-01$ & $4.86e-01$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\bottomrule
+\end{tabular}
+\caption{Mean Score (NTA+NAH$-$YTA$-$ESH) across distractor sentiment conditions on \textbf{Reddit AITA scenarios info}. Highest values in \textcolor{mygreen}{green}, lowest in \textcolor{red}{red}.}
+\label{tab:main-reddit}
+\end{table*}
