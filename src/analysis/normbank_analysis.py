@@ -4,16 +4,21 @@ import pandas as pd
 from src.analysis.significance_testing import pairwise_mixed_lm
 from src.config import PATH_DISTRACTORS, PATH_CSV_RESULTS
 
-def calculate_normbank_results(csv_result_filepath, sig_testing=False):
-    distractor_filepath = 'distractors.csv'
-    options = ['good', 'ok', 'bad']
+def calculate_normbank_results(
+        csv_result_filepath,
+        sig_testing=False,
+        distractor_filepath="distractors.csv",
+        options_ordering=None
+):
+    if options_ordering is None:
+        options_ordering = ['good', 'ok', 'bad']
 
     response_df = pd.read_csv(PATH_CSV_RESULTS / csv_result_filepath)
     distractor_df = pd.read_csv(PATH_DISTRACTORS / distractor_filepath)
 
     # drop rows with sum of probabilities == 0
     response_df['baseline_id'] = response_df['scenario_id'].astype(str)
-    invalid_ids = response_df.loc[(response_df[[f'{option}_prob' for option in options]].sum(axis=1) == 0), 'baseline_id'].tolist()
+    invalid_ids = response_df.loc[(response_df[[f'{option}_prob' for option in options_ordering]].sum(axis=1) == 0), 'baseline_id'].tolist()
     response_df = response_df.loc[~response_df['baseline_id'].isin(invalid_ids)]
 
     # join with distractor df
@@ -27,11 +32,11 @@ def calculate_normbank_results(csv_result_filepath, sig_testing=False):
     }
 
     results = {}
-    for option in options:
+    for option in options_ordering:
         option_results = {}
         for k, df in distractor_dfs.items():
             df_merge = df.merge(
-                distractor_dfs['baseline'][(['scenario_id'] + [f'{option}_prob' for option in options])],
+                distractor_dfs['baseline'][(['scenario_id'] + [f'{option}_prob' for option in options_ordering])],
                 on='scenario_id',
                 how='left',
                 suffixes=['_distractor', '_baseline']
@@ -39,7 +44,7 @@ def calculate_normbank_results(csv_result_filepath, sig_testing=False):
 
             # calculate marginal probabilities
             for condition in ['distractor', 'baseline']:
-                df_merge[f'total_prob_{condition}'] = df_merge[[f'{option}_prob_{condition}' for option in options]].sum(axis=1)
+                df_merge[f'total_prob_{condition}'] = df_merge[[f'{option}_prob_{condition}' for option in options_ordering]].sum(axis=1)
                 df_merge[f'mp_{option}_{condition}'] = df_merge[f'{option}_prob_{condition}'] / df_merge[f'total_prob_{condition}']
             # calculate differences in marginal probabilities
             df_merge[f'mp_diff_{option}'] = df_merge[f'mp_{option}_distractor'] - df_merge[f'mp_{option}_baseline']
