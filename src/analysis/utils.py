@@ -64,7 +64,7 @@ def plot_multi_bar_chart(
         capsize=3,  # cap width for error bars
         capthick=1,  # cap thickness for error bars
 ):
-    # plot setting
+    # plot settings
     if distractor_keys is None:
         distractor_keys = ['baseline', 'positive', 'neutral', 'negative']
     if color_mapping is None:
@@ -128,7 +128,7 @@ def plot_single_bar_chart(
         capsize=3,  # cap width for error bars
         capthick=1,  # cap thickness for error bars
 ):
-    # plot setting
+    # plot settings
     if distractor_keys is None:
         distractor_keys = ['baseline', 'positive', 'neutral', 'negative']
     if color_mapping is None:
@@ -166,3 +166,51 @@ def plot_single_bar_chart(
         os.makedirs(output_dir)
     plt.savefig(output_dir / f"{output_filename}.png", bbox_inches='tight')
     plt.show()
+
+def generate_spider_plot(
+        ax,
+        scores,
+        x_labels,
+        title,
+        color_mapping=None,
+        distractors=None,
+        ylim=None,
+        linewidth=2,  # width of outline
+        alpha=0.25  # transparency of fill
+):
+    if color_mapping is None:
+        color_mapping = {
+            'baseline': 'black',
+            'positive': 'green',
+            'neutral': 'orange',
+            'negative': 'red'
+        }
+    if distractors is None:
+        distractors = ['baseline', 'positive', 'neutral', 'negative']
+
+    ys = dict([(k, list(v.values())) for k, v in scores.items()])
+    num_vars = len(x_labels)
+
+    # split the circle into even parts and save the angles
+    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+
+    # "complete the loop" by adding the start to the end
+    angles += angles[:1]
+    for k, v in ys.items():
+        ys[k] += v[:1]
+
+    # plot
+    for distractor in distractors:
+        ax.plot(angles, ys[distractor], color=color_mapping[distractor], linewidth=linewidth, label=distractor.capitalize())
+        ax.fill(angles, ys[distractor], color=color_mapping[distractor], alpha=alpha)
+
+    # set axis labels
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(x_labels)
+    ax.tick_params(axis='x', pad=20)
+
+    if ylim is not None:
+        ax.set_ylim(**ylim)
+    ax.set_title(title, y=1.1)
+    plt.tight_layout()
+

@@ -159,3 +159,6 @@ def calculate_reddit_mf_results(csv_result_filepath, sig_testing=False):
         }
 
     return results
+
+def calculate_mean_mf_score(df, mf):
+    return df[f'{mf}_score'].mean()
