@@ -1,3 +1,7 @@
+import os
+import matplotlib.pyplot as plt
+import numpy as np
+
 def fmt_pct(v):
     return f"{v*100:.2f}\\%"
 
@@ -42,3 +46,123 @@ def build_latex_table(rows, col_headers, caption, label):
         f"\\label{{{label}}}",
         "\\end{table*}",
     ])
+
+def plot_multi_bar_chart(
+        results,
+        result_keys,
+        plot_labels,
+        output_filename,
+        output_dir,
+        figsize,
+        ylabel,
+        xlabel,  # global x-axis label
+        x_labels,  # array of x-axis labels within bar groups
+        absolute,
+        distractor_keys=None,
+        color_mapping=None,
+        width=0.2,  # width of bars
+        capsize=3,  # cap width for error bars
+        capthick=1,  # cap thickness for error bars
+):
+    # plot setting
+    if distractor_keys is None:
+        distractor_keys = ['baseline', 'positive', 'neutral', 'negative']
+    if color_mapping is None:
+        color_mapping = {
+            'baseline': 'gray',
+            'positive': 'green',
+            'neutral': 'orange',
+            'negative': 'red'
+        }
+    if not absolute:
+        distractor_keys = distractor_keys[1:]
+
+    # generate plot
+    plt.style.use('default')
+    fig, axs = plt.subplots(nrows=1, ncols=len(result_keys), figsize=figsize)
+    xs = np.arange(len(x_labels))
+    offsets = np.linspace(-width * (len(distractor_keys) - 1) / 2, width * (len(distractor_keys) - 1) / 2, len(distractor_keys))
+
+    for i, key in enumerate(result_keys):
+        ax = axs if len(result_keys) == 1 else axs[i]
+        plot_label = plot_labels[i]
+
+        scores = results[key]['mean_scores'] if absolute else results[key]['mean_diffs']
+        st_errors = results[key]['st_error_scores'] if absolute else results[key]['st_error_diffs']
+        ys = np.array([[v[distractor] for distractor in distractor_keys] for v in scores.values()]).T
+        errors = np.array([[v[distractor] for distractor in distractor_keys] for v in st_errors.values()]).T
+
+        for j, distractor in enumerate(distractor_keys):
+            ax.bar(xs + offsets[j], ys[j], width, color=color_mapping[distractor], label=distractor.capitalize())
+            ax.errorbar(xs + offsets[j], ys[j], yerr=errors[j], fmt='none', color='black', capsize=capsize, capthick=capthick)
+
+        ax.set_xticks(xs, x_labels)
+        ax.set_title(plot_label)
+        ax.axhline(linestyle=":", color="black")
+
+    fig.supylabel(ylabel, x=0)
+    fig.supxlabel(xlabel)
+    handles, labels = axs[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='outside right upper', bbox_to_anchor=(1.07, 1))
+    plt.tight_layout()
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    plt.savefig(output_dir / f"{output_filename}.png", bbox_inches='tight')
+    plt.show()
+
+
+def plot_single_bar_chart(
+        results,
+        result_keys,
+        output_filename,
+        output_dir,
+        figsize,
+        ylabel,
+        xlabel,  # global x-axis label
+        x_labels,  # array of x-axis labels within bar groups
+        absolute,
+        distractor_keys=None,
+        color_mapping=None,
+        width=0.2,  # width of bars
+        capsize=3,  # cap width for error bars
+        capthick=1,  # cap thickness for error bars
+):
+    # plot setting
+    if distractor_keys is None:
+        distractor_keys = ['baseline', 'positive', 'neutral', 'negative']
+    if color_mapping is None:
+        color_mapping = {
+            'baseline': 'gray',
+            'positive': 'green',
+            'neutral': 'orange',
+            'negative': 'red'
+        }
+    if not absolute:
+        distractor_keys = distractor_keys[1:]
+
+    # generate plot
+    plt.style.use('default')
+    fig, ax = plt.subplots(figsize=figsize, constrained_layout=True)
+    xs = np.arange(len(x_labels))
+    offsets = np.linspace(-width * (len(distractor_keys) - 1) / 2, width * (len(distractor_keys) - 1) / 2, len(distractor_keys))
+
+    score_key = 'mean_scores' if absolute else 'mean_diffs'
+    error_key = 'st_error_scores' if absolute else 'st_error_diffs'
+    ys = np.array([[results[key][score_key]['all'][distractor] for distractor in distractor_keys] for key in result_keys]).T
+    errors = np.array([[results[key][error_key]['all'][distractor] for distractor in distractor_keys] for key in result_keys]).T
+
+    for j, distractor in enumerate(distractor_keys):
+        ax.bar(xs + offsets[j], ys[j], width, color=color_mapping[distractor], label=distractor.capitalize())
+        ax.errorbar(xs + offsets[j], ys[j], yerr=errors[j], fmt='none', color='black', capsize=capsize, capthick=capthick)
+
+    ax.set_xticks(xs, x_labels)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+    ax.axhline(linestyle=":", color="black")
+    ax.legend()
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    plt.savefig(output_dir / f"{output_filename}.png", bbox_inches='tight')
+    plt.show()
