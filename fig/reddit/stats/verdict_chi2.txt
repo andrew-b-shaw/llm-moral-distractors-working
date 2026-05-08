@@ -1,8 +1,0 @@
-Verdict × Distractor χ² tests
-
-                           model     chi2  dof      p  p_adj
-            google/gemma-3-4b-it 424.1484   12 0.0000 0.0000
-meta-llama/Llama-3.2-3B-Instruct 158.6347    9 0.0000 0.0000
-   openai/gpt-4.1-batch-retrieve  11.9136    9 0.2182 0.4365
-                  openai/gpt-4.1   0.0000    0 1.0000 1.0000
-                   Qwen/Qwen3-4B 301.7841    6 0.0000 0.0000
