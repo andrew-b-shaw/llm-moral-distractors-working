@@ -2,6 +2,8 @@
 
 Repository for the project *"Are Language Models Sensitive to Morally Irrelevant Distractors?"*
 
+Code modified from [Scherrer et al. (2023)](https://arxiv.org/abs/2307.14324)
+
 ## What this repository contains
 
 This codebase runs **moral benchmark evaluations** with optional **distractors** (emotionally valenced text or images). Distractor metadata and paths are in `data/distractors/distractors.csv`.
