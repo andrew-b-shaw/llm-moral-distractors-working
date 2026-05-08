@@ -1,8 +1,6 @@
 # Are Language Models Sensitive to Morally Irrelevant Distractors?
 
-Repository for the project *"Are Language Models Sensitive to Morally Irrelevant Distractors?"* (Andrew Shaw, Christina Hahn, Catherine Rasgaitis, Yash Mishra, Alisa Liu, Natasha Jaques, Yulia Tsvetkov, Amy X. Zhang).
-
-**Project link:** [https://github.com/andrew-b-shaw/llm-moral-distractors](https://github.com/andrew-b-shaw/llm-moral-distractors)
+Repository for the project *"Are Language Models Sensitive to Morally Irrelevant Distractors?"*
 
 ## What this repository contains
 
@@ -46,6 +44,7 @@ The evaluation design (MoralChoice-style prompting, token-level answer scoring f
 │   ├── scenarios/               # Scenario CSVs + dataset_configs.py
 │   ├── distractors/             # distractors.csv + text/image assets
 │   └── templates/               # question_templates.py, response_templates.py
+├── fig/                         # Paper figures
 ├── api_keys/                    # Expected key files (often gitignored)
 ├── cache/                       # HF cache default (see config.py)
 └── requirements.txt
@@ -69,6 +68,11 @@ pip install -r requirements.txt
 
 - `api_keys/openai_key.txt` — OpenAI API
 - `api_keys/huggingface_key.txt` — required for local Hugging Face models (`Llama`, `Gemma`, `Qwen`, `Qwen-VL`)
+
+Ignore local changes to API key files with
+```bash
+git update-index --skip-worktree ./api_keys
+```
 
 ### GPU
 

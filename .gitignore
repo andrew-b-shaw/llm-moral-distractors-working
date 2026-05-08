@@ -10,4 +10,3 @@ data/csv_results/
 venv/
 *.pyc
 .idea/
-src/andrew_test/
