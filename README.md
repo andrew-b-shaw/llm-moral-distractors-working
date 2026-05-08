@@ -73,7 +73,7 @@ pip install -r requirements.txt
 
 Ignore local changes to API key files with
 ```bash
-git update-index --skip-worktree ./api_keys
+git update-index --skip-worktree ./api_keys/
 ```
 
 ### GPU
