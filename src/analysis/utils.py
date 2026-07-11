@@ -167,6 +167,89 @@ def plot_single_bar_chart(
     plt.savefig(output_dir / f"{output_filename}.png", bbox_inches='tight')
     plt.show()
 
+def plot_single_horizontal_bar_chart(
+        results,
+        output_filename,
+        output_dir,
+        figsize,
+        ylabel,
+        xlabel,  # global x-axis label
+        absolute,
+        capsize=3,  # cap width for error bars
+        capthick=1,  # cap thickness for error bars
+):
+    # plot settings
+    plt.style.use('default')
+    bar_labels = list(results['all']['mean_scores'].keys())
+    bar_labels.sort()
+    if not absolute:
+        bar_labels = bar_labels[1:]
+    bar_colors = ['red'] * 10 + ['orange'] * 10 + ['green'] * 10
+
+    # generate plot
+    fig, ax = plt.subplots(figsize=figsize, constrained_layout=True)
+
+    score_key = 'mean_scores' if absolute else 'mean_diffs'
+    error_key = 'st_error_scores' if absolute else 'st_error_diffs'
+    ys = np.array([results['all'][score_key][distractor] for distractor in bar_labels])
+    errors = np.array([results['all'][error_key][distractor] for distractor in bar_labels])
+
+    ax.barh(bar_labels, ys, xerr=errors, align='center', color=bar_colors, error_kw={'capsize': capsize, 'capthick': capthick})
+    ax.yaxis.set_inverted(True)  # arrange data from top to bottom
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+
+    ax.axvline(linestyle=":", color="black")
+    # ax.legend()
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    plt.savefig(output_dir / f"{output_filename}.png", bbox_inches='tight')
+    plt.show()
+
+def plot_multi_horizontal_bar_chart(
+        results,
+        output_filename,
+        output_dir,
+        figsize,
+        ylabel,
+        xlabel,  # global x-axis label
+        absolute,
+        capsize=3,  # cap width for error bars
+        capthick=1,  # cap thickness for error bars
+):
+    # plot settings
+    plt.style.use('default')
+
+    for key in results.keys():
+        bar_labels = list(results[key]['mean_scores'].keys())
+        bar_labels.sort()
+        if not absolute:
+            bar_labels = bar_labels[1:]
+        bar_colors = ['red'] * 10 + ['orange'] * 10 + ['green'] * 10
+
+        # generate plot
+        fig, ax = plt.subplots(figsize=figsize, constrained_layout=True)
+
+        score_key = 'mean_scores' if absolute else 'mean_diffs'
+        error_key = 'st_error_scores' if absolute else 'st_error_diffs'
+        ys = np.array([results[key][score_key][distractor] for distractor in bar_labels])
+        errors = np.array([results[key][error_key][distractor] for distractor in bar_labels])
+
+        ax.barh(bar_labels, ys, xerr=errors, align='center', color=bar_colors, error_kw={'capsize': capsize, 'capthick': capthick})
+        ax.yaxis.set_inverted(True)  # arrange data from top to bottom
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.set_title(key)
+
+        ax.axvline(linestyle=":", color="black")
+        # ax.legend()
+
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        plt.savefig(output_dir / f"{output_filename}_{key}.png", bbox_inches='tight')
+        plt.show()
+
 def generate_spider_plot(
         ax,
         scores,
@@ -213,4 +296,3 @@ def generate_spider_plot(
         ax.set_ylim(**ylim)
     ax.set_title(title, y=1.1)
     plt.tight_layout()
-
