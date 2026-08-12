@@ -1,6 +1,8 @@
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.patches as mpatches
+
 
 def fmt_pct(v):
     return f"{v*100:.2f}\\%"
@@ -194,13 +196,19 @@ def plot_single_horizontal_bar_chart(
     ys = np.array([results['all'][score_key][distractor] for distractor in bar_labels])
     errors = np.array([results['all'][error_key][distractor] for distractor in bar_labels])
 
-    ax.barh(bar_labels, ys, xerr=errors, align='center', color=bar_colors, error_kw={'capsize': capsize, 'capthick': capthick})
-    ax.yaxis.set_inverted(True)  # arrange data from top to bottom
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    ax.bar(bar_labels, ys, xerr=errors, align='center', color=bar_colors, error_kw={'capsize': capsize, 'capthick': capthick})
+    # ax.xaxis.set_inverted(True)  # arrange data from top to bottom
+    ax.set_ylabel(xlabel)
+    ax.set_xlabel(ylabel)
+    ax.tick_params(axis='x', rotation=90)
 
-    ax.axvline(linestyle=":", color="black")
-    # ax.legend()
+    ax.axhline(linestyle=":", color="black")
+    patches = [
+        mpatches.Patch(color='green', label='Positive'),
+        mpatches.Patch(color='orange', label='Neutral'),
+        mpatches.Patch(color='red', label='Negative'),
+    ]
+    ax.legend(handles=patches)
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -236,14 +244,20 @@ def plot_multi_horizontal_bar_chart(
         ys = np.array([results[key][score_key][distractor] for distractor in bar_labels])
         errors = np.array([results[key][error_key][distractor] for distractor in bar_labels])
 
-        ax.barh(bar_labels, ys, xerr=errors, align='center', color=bar_colors, error_kw={'capsize': capsize, 'capthick': capthick})
-        ax.yaxis.set_inverted(True)  # arrange data from top to bottom
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
+        ax.bar(bar_labels, ys, xerr=errors, align='center', color=bar_colors, error_kw={'capsize': capsize, 'capthick': capthick})
+        # ax.xaxis.set_inverted(True)  # arrange data from top to bottom
+        ax.set_ylabel(xlabel)
+        ax.set_xlabel(ylabel)
         ax.set_title(key)
+        ax.tick_params(axis='x', rotation=90)
 
-        ax.axvline(linestyle=":", color="black")
-        # ax.legend()
+        ax.axhline(linestyle=":", color="black")
+        patches = [
+            mpatches.Patch(color='green', label='Positive'),
+            mpatches.Patch(color='orange', label='Neutral'),
+            mpatches.Patch(color='red', label='Negative'),
+        ]
+        ax.legend(handles=patches)
 
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
