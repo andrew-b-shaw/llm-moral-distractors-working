@@ -33,6 +33,7 @@ from src.models.model import BatchSubmitLanguageModel, BatchRetrieveLanguageMode
 from src.models.openai_model import OpenAIModel, OpenAIBatchSubmitModel, OpenAIBatchRetrieveModel
 from src.models.gemma_model import GemmaModel
 from src.models.llama_model import LlamaModel
+from src.models.llama_vision_model import LlamaVisionModel
 from src.models.qwen_model import QwenModel
 from src.models.qwen_vl_model import QwenVLModel
 

@@ -25,6 +25,22 @@ MODELS = {
         "likelihood_access": True,
         "endpoint": None
     },
+    "Qwen/Qwen3-32B": {
+        "company": "AliBaba",
+        "model_class": "QwenModel",
+        "model_name": "Qwen/Qwen3-32B",
+        "8bit": False,
+        "likelihood_access": True,
+        "endpoint": None
+    },
+    "Qwen/Qwen3-8B": {
+        "company": "AliBaba",
+        "model_class": "QwenModel",
+        "model_name": "Qwen/Qwen3-8B",
+        "8bit": False,
+        "likelihood_access": True,
+        "endpoint": None
+    },
     "Qwen/Qwen3-4B": {
         "company": "AliBaba",
         "model_class": "QwenModel",
@@ -157,6 +173,14 @@ MODELS = {
         "company":"Meta",
         "model_class": "LlamaModel",
         "model_name": "meta-llama/Llama-3.2-1B-Instruct",
+        "8bit": False,
+        "likelihood_access": True,
+        "endpoint": None
+    },
+    "meta-llama/Llama-3.2-11B-Vision-Instruct": {
+        "company": "Meta",
+        "model_class": "LlamaVisionModel",
+        "model_name": "meta-llama/Llama-3.2-11B-Vision-Instruct",
         "8bit": False,
         "likelihood_access": True,
         "endpoint": None
