@@ -176,7 +176,12 @@ class GemmaModel(LanguageModel):
             )
 
         answer_raw = self._tokenizer.decode(output.sequences[0], skip_special_tokens=True)
-        answer = answer_raw[answer_raw.rfind("Answer:") + len("Answer:"):].strip()
+        # Split on the chat template's turn marker ("<start_of_turn>model\n", which
+        # decodes to "\nmodel\n" once special tokens are stripped) rather than the
+        # dataset-specific "Answer:" cue -- the latter only exists in MoralChoice/
+        # NormBank's templates, not Reddit's, which left `answer` as almost the
+        # entire raw text (echoed system+user prompt included) for Reddit queries.
+        answer = answer_raw[answer_raw.rfind("\nmodel\n") + len("\nmodel\n"):].strip()
 
         return GemmaModelResponse(
             timestamp=get_timestamp(),

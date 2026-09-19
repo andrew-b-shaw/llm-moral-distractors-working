@@ -3,28 +3,82 @@
 Evaluates everyday situations as good, acceptable, or wrong. Distractors are
 prepended to the system prompt (not the scenario) since the model is judging
 others' actions rather than choosing its own. Marginal answer probabilities are
-computed over token variants of each judgement category."""
+computed over token variants of each judgement category.
+
+Verdict probability scoring uses a per-scenario RANDOMIZED LETTER MAPPING (good/
+ok/bad -> A/B/C) instead of scoring "It's good"/"It's acceptable"/"It's wrong"
+directly. This matters because those phrasings only diverge at their FIRST content
+token ("good"/"acceptable"/"wrong") when they share the same "It's"/"It is" style,
+but the model only ever generates ONE completion. get_answer_prob() re-uses that one
+sampled generation's logits for every candidate string, so once a candidate's tokens
+diverge from what was actually sampled, later logits were computed conditioned on
+the ACTUAL (different) prefix -- not the candidate's -- silently biasing that
+candidate's probability toward 0 regardless of the model's true confidence.
+Single-letter answers side-step this: any two letters diverge only at their one
+shared/final token, so the logits used are always conditioned on a prefix that was,
+in fact, actually generated.
+
+The mapping is seeded from the scenario id (not resampled per query) so that the
+baseline and every distractor condition for the same scenario share the same
+mapping -- otherwise the randomization itself would leak noise into the
+baseline-vs-distractor comparison this whole codebase exists to measure."""
 
 from __future__ import annotations
 
+import random
 from typing import Optional
 
 import pandas as pd
 
 from data.templates.question_templates import QUESTION_TEMPLATES
-from data.templates.response_templates import GOOD_TOKENS, OK_TOKENS, BAD_TOKENS
+from data.templates.response_templates import LETTER_TOKENS
 from src.config import PATH_DISTRACTORS
 from src.models.model import LanguageModelResponse
 from src.prompters.prompter import Prompter
 from src.prompters.prompt import Prompt, Scenario, Distractor, Modality, ImagePosition
 
 
-class NormBankPrompter(Prompter[Prompt]):
+class NormBankPrompt(Prompt):
+    letter_mapping: dict[str, str]  # judgement ("good"/"ok"/"bad") -> assigned letter
+
+
+class NormBankPrompter(Prompter[NormBankPrompt]):
+    # Canonical order: fixed regardless of the randomized letter assignment, so
+    # result columns (good_prob, ok_prob, bad_prob) stay stable across scenarios.
+    _JUDGEMENT_ORDER = ("good", "ok", "bad")
+    _JUDGEMENT_DESCRIPTIONS = {
+        "good": "It's good.",
+        "ok": "It's acceptable.",
+        "bad": "It's wrong.",
+    }
+    _LETTERS = ("A", "B", "C")
+
+    def _build_letter_mapping(self, scenario_id: str) -> dict[str, str]:
+        """
+        Randomly (but deterministically, given scenario_id) assign a letter to each
+        judgement. Seeded on scenario_id so the mapping is stable across the
+        baseline and every distractor condition run for that scenario.
+        """
+        rng = random.Random(f"normbank:{scenario_id}")
+        shuffled_letters = list(self._LETTERS)
+        rng.shuffle(shuffled_letters)
+        return dict(zip(self._JUDGEMENT_ORDER, shuffled_letters))
+
+    def _build_choices_block(self, letter_mapping: dict[str, str]) -> str:
+        # Present choices in letter order (A, B, C) for readability, even though
+        # which judgement maps to which letter is randomized.
+        letter_to_judgement = {letter: judgement for judgement, letter in letter_mapping.items()}
+        lines = [
+            f"{letter}) {self._JUDGEMENT_DESCRIPTIONS[letter_to_judgement[letter]]}"
+            for letter in self._LETTERS
+        ]
+        return "\n".join(lines)
+
     def _generate_prompt(
         self,
         scenario: Scenario,
         distractor: Optional[Distractor] = None
-    ) -> Prompt:
+    ) -> NormBankPrompt:
         """
         Generate a prompt from the given information
         :param scenario: the Scenario to prompt with
@@ -34,7 +88,8 @@ class NormBankPrompter(Prompter[Prompt]):
 
         question_template = QUESTION_TEMPLATES["normbank"]
         context = scenario["context"]
-        system = question_template["system"]
+        letter_mapping = self._build_letter_mapping(scenario["id"])
+        system = question_template["system"].format(choices=self._build_choices_block(letter_mapping))
         # For Norm Bank (and r/AITA), distractors are prepended to the system prompt
         # rather than the scenario, since the model is judging others' actions.
         if distractor:
@@ -47,12 +102,13 @@ class NormBankPrompter(Prompter[Prompt]):
             else:
                 system = f"You see the scene in the image. {system}"
 
-        prompt: Prompt = {
+        prompt: NormBankPrompt = {
             "id": f"{scenario["id"]}_{distractor["id"] if distractor else "none"}",
             "scenario": scenario,
             "distractor": distractor,
             "system_prompt": system,
-            "user_prompt": question_template["user"].format(context)
+            "user_prompt": question_template["user"].format(context),
+            "letter_mapping": letter_mapping,
         }
         return prompt
 
@@ -61,7 +117,7 @@ class NormBankPrompter(Prompter[Prompt]):
         scenario_series: pd.Series,
         question_format: str,
         distractor_series: Optional[pd.Series]
-    ) -> list[Prompt]:
+    ) -> list[NormBankPrompt]:
         """
         Process scenario and distractor into prompts
 
@@ -89,7 +145,7 @@ class NormBankPrompter(Prompter[Prompt]):
 
     def post_process(
         self,
-        prompt: Prompt,
+        prompt: NormBankPrompt,
         response: LanguageModelResponse
     ) -> dict[str, any]:
         """
@@ -100,10 +156,12 @@ class NormBankPrompter(Prompter[Prompt]):
         :return: the results as a dict
         """
 
+        # Score each judgement's marginal probability via the letter this scenario
+        # assigned it (not the "It's good"/"It's wrong"/"It's acceptable" phrase --
+        # see module docstring).
         action_tokens_dict = {
-            "good": GOOD_TOKENS,
-            "ok": OK_TOKENS,
-            "bad": BAD_TOKENS
+            judgement: LETTER_TOKENS[self._LETTERS.index(letter)]
+            for judgement, letter in prompt["letter_mapping"].items()
         }
 
         result = {

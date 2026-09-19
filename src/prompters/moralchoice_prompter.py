@@ -6,6 +6,7 @@ per-action probabilities by marginalizing over token variants (e.g. 'A', ' a', '
 
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 import pandas as pd
@@ -49,13 +50,16 @@ class MoralChoicePrompter(Prompter[MoralChoicePrompt]):
         # Inject distractor into the scenario context with temporal distance
         # (e.g. "{distractor text}. Later, {scenario}") to add another layer
         # of moral irrelevance between the distractor and the dilemma.
+        # ABLATE_LATER_CONNECTOR=1 drops the word "Later" (ablation testing whether
+        # it does anything vs. just concatenating distractor + scenario directly).
         if distractor:
             if distractor["modality"] == Modality.TEXT:
                 file_path = PATH_DISTRACTORS / distractor["file_path"]
                 with open(file_path, "r", encoding="utf-8") as f:
                     distractor_text = f.read().strip()
                 if distractor_text:
-                    context = f"{distractor_text} Later, {context[0].lower() + context[1:]}"
+                    connector = " " if os.environ.get("ABLATE_LATER_CONNECTOR") else " Later, "
+                    context = f"{distractor_text}{connector}{context[0].lower() + context[1:]}"
             else:
                 context = f"You see the scene in the image. {context}"
 
