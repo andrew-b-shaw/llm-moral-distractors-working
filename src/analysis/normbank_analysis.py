@@ -18,7 +18,7 @@ def calculate_normbank_results(
 
     # drop rows with sum of probabilities == 0
     response_df['baseline_id'] = response_df['scenario_id'].astype(str)
-    invalid_ids = response_df.loc[(response_df[[f'{option}_prob' for option in options_ordering]].sum(axis=1) == 0), 'baseline_id'].tolist()
+    invalid_ids = response_df.loc[(response_df[[f'{option}_prob' for option in options_ordering]].sum(axis=1) <= 0.01), 'baseline_id'].tolist()
     response_df = response_df.loc[~response_df['baseline_id'].isin(invalid_ids)]
 
     # join with distractor df

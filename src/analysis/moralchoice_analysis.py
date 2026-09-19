@@ -16,7 +16,7 @@ def calculate_moralchoice_results(
 
     # drop rows with sum of probabilities == 0
     response_df["baseline_id"] = response_df["scenario_id"].astype(str) + response_df["question_ordering"].astype(str)
-    invalid_ids = response_df.loc[(response_df["a1_prob"] + response_df["a2_prob"] == 0), "baseline_id"].tolist()
+    invalid_ids = response_df.loc[(response_df["a1_prob"] + response_df["a2_prob"] <= 0.01), "baseline_id"].tolist()
     response_df = response_df.loc[~response_df["baseline_id"].isin(invalid_ids)]
 
     # join with scenario and distractor df

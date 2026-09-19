@@ -58,7 +58,8 @@ def plot_multi_bar_chart(
         figsize,
         ylabel,
         xlabel,  # global x-axis label
-        x_labels,  # array of x-axis labels within bar groups
+        verdict_keys,  # array of x-axis labels within bar groups
+        verdict_labels,
         absolute,
         distractor_keys=None,
         color_mapping=None,
@@ -82,7 +83,7 @@ def plot_multi_bar_chart(
     # generate plot
     plt.style.use('default')
     fig, axs = plt.subplots(nrows=1, ncols=len(result_keys), figsize=figsize)
-    xs = np.arange(len(x_labels))
+    xs = np.arange(len(verdict_keys))
     offsets = np.linspace(-width * (len(distractor_keys) - 1) / 2, width * (len(distractor_keys) - 1) / 2, len(distractor_keys))
 
     for i, key in enumerate(result_keys):
@@ -91,14 +92,14 @@ def plot_multi_bar_chart(
 
         scores = results[key]['mean_scores'] if absolute else results[key]['mean_diffs']
         st_errors = results[key]['st_error_scores'] if absolute else results[key]['st_error_diffs']
-        ys = np.array([[v[distractor] for distractor in distractor_keys] for v in scores.values()]).T
-        errors = np.array([[v[distractor] for distractor in distractor_keys] for v in st_errors.values()]).T
+        ys = np.array([[scores[verdict][distractor] for distractor in distractor_keys] for verdict in verdict_keys]).T
+        errors = np.array([[st_errors[verdict][distractor] for distractor in distractor_keys] for verdict in verdict_keys]).T
 
         for j, distractor in enumerate(distractor_keys):
             ax.bar(xs + offsets[j], ys[j], width, color=color_mapping[distractor], label=distractor.capitalize())
             ax.errorbar(xs + offsets[j], ys[j], yerr=errors[j], fmt='none', color='black', capsize=capsize, capthick=capthick)
 
-        ax.set_xticks(xs, x_labels)
+        ax.set_xticks(xs, verdict_labels)
         ax.set_title(plot_label)
         ax.axhline(linestyle=":", color="black")
 
@@ -129,6 +130,8 @@ def plot_single_bar_chart(
         width=0.2,  # width of bars
         capsize=3,  # cap width for error bars
         capthick=1,  # cap thickness for error bars
+        xtick_rotation=0,  # rotation (degrees) for x-axis tick labels, useful for long model names
+        legend_loc=None,  # explicit legend location, useful when 'best' picks a spot that overlaps bars
 ):
     # plot settings
     if distractor_keys is None:
@@ -158,11 +161,15 @@ def plot_single_bar_chart(
         ax.bar(xs + offsets[j], ys[j], width, color=color_mapping[distractor], label=distractor.capitalize())
         ax.errorbar(xs + offsets[j], ys[j], yerr=errors[j], fmt='none', color='black', capsize=capsize, capthick=capthick)
 
-    ax.set_xticks(xs, x_labels)
+    if xtick_rotation:
+        ha = 'center' if xtick_rotation == 90 else 'right'
+        ax.set_xticks(xs, x_labels, rotation=xtick_rotation, ha=ha)
+    else:
+        ax.set_xticks(xs, x_labels)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
     ax.axhline(linestyle=":", color="black")
-    ax.legend()
+    ax.legend(loc=legend_loc)
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
