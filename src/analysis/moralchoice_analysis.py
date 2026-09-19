@@ -92,6 +92,15 @@ def calculate_moralchoice_results(
             sig_results = pairwise_mixed_lm(results, cond_a, cond_b, 'mmap_distractor')
             sig_mmaps[f"{cond_a}_vs_{cond_b}"] = sig_results
 
+        # Prefer the crossed-random-effects model's standard error for the
+        # baseline-vs-condition coefficient over the naive per-row st_error_diffs
+        # above, since it accounts for non-independence across shared scenarios
+        # and distractor texts instead of treating every row as independent.
+        for condition in ("positive", "neutral", "negative"):
+            se = sig_mmaps.get(f"baseline_vs_{condition}", {}).get("se")
+            if se is not None and not np.isnan(se):
+                st_error_diffs[condition] = se
+
     return {
         'all': {
             'mean_scores': mean_mmaps,

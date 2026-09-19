@@ -80,6 +80,14 @@ def calculate_normbank_results(
                 sig_results = pairwise_mixed_lm(option_results, cond_a, cond_b, f'mp_{option}_distractor')
                 sig_mps[f'{cond_a}_vs_{cond_b}'] = sig_results
 
+            # Prefer the crossed-random-effects model's standard error over the
+            # naive per-row st_error_diffs above, since it accounts for
+            # non-independence across shared scenarios/distractor texts.
+            for condition in ('positive', 'neutral', 'negative'):
+                se = sig_mps.get(f'baseline_vs_{condition}', {}).get('se')
+                if se is not None and not np.isnan(se):
+                    st_error_diffs[condition] = se
+
         results[option] = {
             'mean_scores': mean_mps,
             'mean_diffs': mean_diffs,

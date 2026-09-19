@@ -33,6 +33,7 @@ def pairwise_mixed_lm(results_dict, cond_a, cond_b, score_col):
     term = f"condition[T.{levels[1]}]"
     return {
         'coef':   model.params.get(term, np.nan),
+        'se':     model.bse.get(term, np.nan),
         'stat':   model.tvalues.get(term, np.nan),
         'pvalue': model.pvalues.get(term, np.nan),
         'ref':    levels[0],
