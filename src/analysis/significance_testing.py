@@ -10,8 +10,14 @@ def pairwise_mixed_lm(results_dict, cond_a, cond_b, score_col):
     }
     df_a = results_dict[cond_a][['scenario_id', 'distractor_id', score_col]].assign(condition=cond_a)
     df_b = results_dict[cond_b][['scenario_id', 'distractor_id', score_col]].assign(condition=cond_b)
-    long_df = pd.concat([df_a, df_b], axis=0).rename(columns={score_col: 'score'}).astype(type_map)
-    long_df = long_df.fillna("none")
+    long_df = pd.concat([df_a, df_b], axis=0).rename(columns={score_col: 'score'})
+    # Fill missing distractor_id (baseline rows have none) with a real string
+    # *before* casting to str -- casting NaN to str first turns it into the
+    # literal string "nan", which patsy's C() then silently treats as missing
+    # and drops from the vc_formula design matrix, desyncing it from the rest
+    # of the rows (mismatched dimensions in statsmodels' sparse hstack).
+    long_df[['scenario_id', 'distractor_id']] = long_df[['scenario_id', 'distractor_id']].fillna("none")
+    long_df = long_df.astype(type_map)
     long_df['dummy_group'] = 1
     # MixedLM's vc_formula processing indexes into `data` per group via
     # DataFrame.loc, so a duplicated index (inherited from the per-rule
