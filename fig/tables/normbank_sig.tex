@@ -1,0 +1,33 @@
+\begin{table*}[b]
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Model} & \textbf{Positive vs.} & \textbf{Negative vs.} & \textbf{Positive vs.} & \textbf{Negative vs.} & \textbf{Positive vs.} \\
+ & \textbf{Baseline} & \textbf{Baseline} & \textbf{Neutral} & \textbf{Neutral} & \textbf{Negative} \\
+\midrule
+\multicolumn{6}{c}{Good} \\
+\midrule
+\lm{gemma-3-4b-it} & $9.35e-01$ & $\mathbf{0.00e+00}$ & $\mathbf{3.39e-04}$ & $1.51e-01$ & $\mathbf{1.64e-07}$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.00e+00$ & $\mathbf{7.90e-07}$ & $\mathbf{1.79e-03}$ & $\mathbf{8.60e-16}$ & $\mathbf{8.19e-21}$ \\
+\lm{Qwen3-4B} & $1.52e-01$ & $1.00e+00$ & $\mathbf{1.64e-02}$ & $\mathbf{1.44e-06}$ & $\mathbf{3.81e-11}$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $2.46e-01$ & $2.30e-01$ & $7.35e-01$ & $\mathbf{1.74e-03}$ \\
+\midrule
+\multicolumn{6}{c}{Acceptable} \\
+\midrule
+\lm{gemma-3-4b-it} & $9.35e-01$ & $\mathbf{5.64e-280}$ & $9.71e-01$ & $\mathbf{1.83e-08}$ & $\mathbf{8.96e-09}$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.00e+00$ & $2.33e-01$ & $1.00e+00$ & $\mathbf{2.90e-05}$ & $\mathbf{3.55e-02}$ \\
+\lm{Qwen3-4B} & $1.00e+00$ & $3.03e-01$ & $1.00e+00$ & $\mathbf{9.12e-06}$ & $\mathbf{7.27e-03}$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\midrule
+\multicolumn{6}{c}{Wrong} \\
+\midrule
+\lm{gemma-3-4b-it} & $2.27e-01$ & $\mathbf{0.00e+00}$ & $3.71e-01$ & $\mathbf{4.21e-08}$ & $\mathbf{4.37e-98}$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.00e+00$ & $\mathbf{1.18e-03}$ & $3.82e-01$ & $\mathbf{1.59e-12}$ & $\mathbf{9.91e-16}$ \\
+\lm{Qwen3-4B} & $3.73e-01$ & $3.19e-01$ & $3.55e-01$ & $\mathbf{4.04e-11}$ & $\mathbf{4.72e-11}$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $1.00e+00$ & $1.51e-01$ & $1.00e+00$ & $1.00e+00$ \\
+\bottomrule
+\end{tabular}
+\caption{Holm-Bonferroni-corrected p-values (one-sided) comparing marginal probability distributions of judgements on \textbf{NormBank scenarios with textual distractors}.}
+\label{tab:normbank-sig}
+\end{table*}

@@ -1,0 +1,46 @@
+\begin{table*}[b]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Positive} & \textbf{Neutral} & \textbf{Negative} \\
+\midrule
+\multicolumn{4}{c}{ESH} \\
+\midrule
+\lm{gemma-3-4b-it} & \textcolor{red}{7.46\%} & 8.91\% & \textcolor{mygreen}{13.85\%} \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{red}{1.84\%} & 1.94\% & \textcolor{mygreen}{2.11\%} \\
+\lm{Qwen3-4B} & 0.61\% & \textcolor{red}{0.53\%} & \textcolor{mygreen}{1.12\%} \\
+\lm{GPT-4.1} & \textcolor{red}{1.52\%} & 1.56\% & \textcolor{mygreen}{2.40\%} \\
+\midrule
+\multicolumn{4}{c}{YTA} \\
+\midrule
+\lm{gemma-3-4b-it} & 21.18\% & \textcolor{red}{19.63\%} & \textcolor{mygreen}{22.50\%} \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{red}{5.25\%} & 5.80\% & \textcolor{mygreen}{7.74\%} \\
+\lm{Qwen3-4B} & \textcolor{red}{20.96\%} & 22.24\% & \textcolor{mygreen}{28.04\%} \\
+\lm{GPT-4.1} & 1.08\% & \textcolor{red}{0.88\%} & \textcolor{mygreen}{1.44\%} \\
+\midrule
+\multicolumn{4}{c}{NTA} \\
+\midrule
+\lm{gemma-3-4b-it} & \textcolor{mygreen}{23.84\%} & \textcolor{red}{20.76\%} & 22.47\% \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{red}{5.58\%} & 6.21\% & \textcolor{mygreen}{7.41\%} \\
+\lm{Qwen3-4B} & \textcolor{red}{20.89\%} & 21.94\% & \textcolor{mygreen}{28.16\%} \\
+\lm{GPT-4.1} & \textcolor{red}{1.53\%} & 1.70\% & \textcolor{mygreen}{3.88\%} \\
+\midrule
+\multicolumn{4}{c}{NAH} \\
+\midrule
+\lm{gemma-3-4b-it} & \textcolor{mygreen}{5.43\%} & 3.59\% & \textcolor{red}{3.41\%} \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{red}{1.57\%} & 1.65\% & \textcolor{mygreen}{1.89\%} \\
+\lm{Qwen3-4B} & \textcolor{red}{0.00\%} & 0.00\% & \textcolor{mygreen}{0.10\%} \\
+\lm{GPT-4.1} & \textcolor{red}{1.12\%} & 1.44\% & \textcolor{mygreen}{3.16\%} \\
+\midrule
+\multicolumn{4}{c}{INFO} \\
+\midrule
+\lm{gemma-3-4b-it} & \textcolor{red}{4.46\%} & \textcolor{mygreen}{5.36\%} & 5.15\% \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{red}{1.03\%} & 1.19\% & \textcolor{mygreen}{1.42\%} \\
+\lm{Qwen3-4B} & \textcolor{red}{0.38\%} & \textcolor{mygreen}{0.40\%} & 0.40\% \\
+\lm{GPT-4.1} & \textcolor{mygreen}{0.01\%} & 0.01\% & \textcolor{red}{0.00\%} \\
+\bottomrule
+\end{tabular}
+\caption{Mean magnitude of change in marginal verdict probability on \textbf{r/AITA scenarios with textual distractors}. Lowest values shown in \textcolor{red}{red} and highest in \textcolor{mygreen}{mygreen}.}
+\label{tab:reddit-magnitude-results}
+\end{table*}

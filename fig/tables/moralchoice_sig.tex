@@ -1,0 +1,26 @@
+\begin{table*}[b]
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Model} & \textbf{Positive vs.} & \textbf{Negative vs.} & \textbf{Positive vs.} & \textbf{Negative vs.} & \textbf{Positive vs.} \\
+ & \textbf{Baseline} & \textbf{Baseline} & \textbf{Neutral} & \textbf{Neutral} & \textbf{Negative} \\
+\midrule
+\multicolumn{6}{c}{High-Ambiguity} \\
+\midrule
+\lm{gemma-3-4b-it} & $1.00e+00$ & $1.00e+00$ & $7.35e-01$ & $1.07e-01$ & $\mathbf{3.48e-02}$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.00e+00$ & $\mathbf{4.41e-11}$ & $1.00e+00$ & $1.21e-01$ & $\mathbf{1.09e-02}$ \\
+\lm{Qwen3-4B} & $\mathbf{1.03e-04}$ & $6.99e-01$ & $\mathbf{1.45e-02}$ & $\mathbf{7.39e-03}$ & $\mathbf{4.14e-07}$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $\mathbf{7.98e-03}$ & $1.00e+00$ \\
+\midrule
+\multicolumn{6}{c}{Low-Ambiguity} \\
+\midrule
+\lm{gemma-3-4b-it} & $4.83e-01$ & $1.00e+00$ & $1.00e+00$ & $\mathbf{3.48e-02}$ & $\mathbf{2.14e-02}$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.00e+00$ & $\mathbf{2.95e-06}$ & $1.00e+00$ & $\mathbf{4.89e-03}$ & $\mathbf{3.75e-03}$ \\
+\lm{Qwen3-4B} & $\mathbf{1.03e-04}$ & $5.29e-01$ & $6.99e-01$ & $\mathbf{1.03e-04}$ & $\mathbf{2.40e-05}$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $1.00e+00$ & $7.57e-01$ & $7.57e-01$ & $7.57e-01$ \\
+\bottomrule
+\end{tabular}
+\caption{Holm-Bonferroni-corrected p-values (one-sided) comparing marginal moral action probability (MMAP) distributions on \textbf{high- and low-ambiguity scenarios with textual distractors}.}
+\label{tab:moralchoice-sig}
+\end{table*}

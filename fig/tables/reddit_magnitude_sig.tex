@@ -1,0 +1,46 @@
+\begin{table*}[b]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Positive} & \textbf{Neutral} & \textbf{Negative} \\
+\midrule
+\multicolumn{4}{c}{ESH} \\
+\midrule
+\lm{gemma-3-4b-it} & $\mathbf{1.90e-09}$ & $\mathbf{8.39e-12}$ & $\mathbf{1.83e-04}$ \\
+\lm{Llama-3.2-3B-Instruct} & $\mathbf{9.19e-26}$ & $\mathbf{1.38e-25}$ & $\mathbf{1.50e-25}$ \\
+\lm{Qwen3-4B} & $1.18e-01$ & $1.18e-01$ & $\mathbf{2.69e-02}$ \\
+\lm{GPT-4.1} & $5.23e-02$ & $1.15e-01$ & $\mathbf{2.96e-03}$ \\
+\midrule
+\multicolumn{4}{c}{YTA} \\
+\midrule
+\lm{gemma-3-4b-it} & $\mathbf{3.04e-26}$ & $\mathbf{4.88e-31}$ & $\mathbf{3.49e-27}$ \\
+\lm{Llama-3.2-3B-Instruct} & $\mathbf{2.20e-34}$ & $\mathbf{1.19e-27}$ & $\mathbf{5.26e-26}$ \\
+\lm{Qwen3-4B} & $\mathbf{1.30e-24}$ & $\mathbf{6.36e-30}$ & $\mathbf{9.24e-25}$ \\
+\lm{GPT-4.1} & $5.49e-02$ & $1.15e-01$ & $\mathbf{3.60e-02}$ \\
+\midrule
+\multicolumn{4}{c}{NTA} \\
+\midrule
+\lm{gemma-3-4b-it} & $\mathbf{2.50e-31}$ & $\mathbf{1.94e-21}$ & $\mathbf{1.77e-33}$ \\
+\lm{Llama-3.2-3B-Instruct} & $\mathbf{3.77e-23}$ & $\mathbf{4.68e-33}$ & $\mathbf{2.13e-51}$ \\
+\lm{Qwen3-4B} & $\mathbf{3.76e-24}$ & $\mathbf{1.88e-30}$ & $\mathbf{3.76e-24}$ \\
+\lm{GPT-4.1} & $1.15e-01$ & $\mathbf{3.90e-02}$ & $7.62e-02$ \\
+\midrule
+\multicolumn{4}{c}{NAH} \\
+\midrule
+\lm{gemma-3-4b-it} & $\mathbf{2.50e-05}$ & $\mathbf{3.47e-06}$ & $\mathbf{1.08e-05}$ \\
+\lm{Llama-3.2-3B-Instruct} & $\mathbf{5.90e-14}$ & $\mathbf{3.32e-25}$ & $\mathbf{3.06e-20}$ \\
+\lm{Qwen3-4B} & $6.89e-01$ & $6.89e-01$ & $6.89e-01$ \\
+\lm{GPT-4.1} & $1.15e-01$ & $7.62e-02$ & $1.34e-01$ \\
+\midrule
+\multicolumn{4}{c}{INFO} \\
+\midrule
+\lm{gemma-3-4b-it} & $\mathbf{9.31e-06}$ & $\mathbf{7.41e-08}$ & $\mathbf{9.31e-06}$ \\
+\lm{Llama-3.2-3B-Instruct} & $\mathbf{2.71e-22}$ & $\mathbf{3.75e-30}$ & $\mathbf{7.54e-19}$ \\
+\lm{Qwen3-4B} & $6.89e-01$ & $6.89e-01$ & $6.89e-01$ \\
+\lm{GPT-4.1} & $4.03e-01$ & $4.03e-01$ & $2.25e-01$ \\
+\bottomrule
+\end{tabular}
+\caption{Holm-Bonferroni-corrected p-values (one-sided) testing whether the magnitude of change in marginal verdict probability is greater than zero on \textbf{r/AITA scenarios with textual distractors}.}
+\label{tab:reddit-magnitude-sig}
+\end{table*}

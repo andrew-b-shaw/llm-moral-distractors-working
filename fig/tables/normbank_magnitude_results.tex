@@ -1,0 +1,32 @@
+\begin{table*}[b]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Positive} & \textbf{Neutral} & \textbf{Negative} \\
+\midrule
+\multicolumn{4}{c}{Good} \\
+\midrule
+\lm{gemma-3-4b-it} & \textcolor{red}{24.62\%} & 25.99\% & \textcolor{mygreen}{27.60\%} \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{red}{12.30\%} & 12.96\% & \textcolor{mygreen}{23.00\%} \\
+\lm{Qwen3-4B} & \textcolor{mygreen}{26.19\%} & 14.32\% & \textcolor{red}{5.85\%} \\
+\lm{GPT-4.1} & \textcolor{red}{6.69\%} & 8.54\% & \textcolor{mygreen}{10.34\%} \\
+\midrule
+\multicolumn{4}{c}{Acceptable} \\
+\midrule
+\lm{gemma-3-4b-it} & 25.14\% & \textcolor{mygreen}{38.33\%} & \textcolor{red}{21.10\%} \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{red}{12.33\%} & 12.59\% & \textcolor{mygreen}{17.23\%} \\
+\lm{Qwen3-4B} & \textcolor{mygreen}{35.85\%} & \textcolor{red}{26.02\%} & 28.69\% \\
+\lm{GPT-4.1} & \textcolor{red}{8.62\%} & 9.13\% & \textcolor{mygreen}{12.14\%} \\
+\midrule
+\multicolumn{4}{c}{Wrong} \\
+\midrule
+\lm{gemma-3-4b-it} & \textcolor{red}{19.81\%} & 29.34\% & \textcolor{mygreen}{48.49\%} \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{red}{11.33\%} & 13.37\% & \textcolor{mygreen}{33.21\%} \\
+\lm{Qwen3-4B} & 26.05\% & \textcolor{red}{17.94\%} & \textcolor{mygreen}{27.48\%} \\
+\lm{GPT-4.1} & \textcolor{red}{6.20\%} & \textcolor{mygreen}{8.82\%} & 8.00\% \\
+\bottomrule
+\end{tabular}
+\caption{Mean magnitude of change in marginal judgement probability on \textbf{NormBank scenarios with textual distractors}. Lowest values shown in \textcolor{red}{red} and highest in \textcolor{mygreen}{mygreen}.}
+\label{tab:normbank-magnitude-results}
+\end{table*}

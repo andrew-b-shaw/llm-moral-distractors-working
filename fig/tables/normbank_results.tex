@@ -1,0 +1,32 @@
+\begin{table*}[b]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{Baseline} & \textbf{Positive} & \textbf{Neutral} & \textbf{Negative} \\
+\midrule
+\multicolumn{5}{c}{Good} \\
+\midrule
+\lm{gemma-3-4b-it} & 27.63\% & \textcolor{mygreen}{37.44\%} & 7.27\% & \textcolor{red}{0.08\%} \\
+\lm{Llama-3.2-3B-Instruct} & 31.32\% & \textcolor{mygreen}{32.18\%} & 23.90\% & \textcolor{red}{9.41\%} \\
+\lm{Qwen3-4B} & 4.98\% & \textcolor{mygreen}{30.96\%} & 17.82\% & \textcolor{red}{3.92\%} \\
+\lm{GPT-4.1} & \textcolor{mygreen}{34.92\%} & 33.24\% & 30.76\% & \textcolor{red}{28.88\%} \\
+\midrule
+\multicolumn{5}{c}{Acceptable} \\
+\midrule
+\lm{gemma-3-4b-it} & 21.09\% & 28.81\% & \textcolor{mygreen}{46.07\%} & \textcolor{red}{0.19\%} \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{mygreen}{24.52\%} & 20.29\% & 24.38\% & \textcolor{red}{15.21\%} \\
+\lm{Qwen3-4B} & 38.78\% & 34.40\% & \textcolor{mygreen}{39.07\%} & \textcolor{red}{15.44\%} \\
+\lm{GPT-4.1} & 36.08\% & 34.50\% & \textcolor{red}{33.69\%} & \textcolor{mygreen}{38.17\%} \\
+\midrule
+\multicolumn{5}{c}{Wrong} \\
+\midrule
+\lm{gemma-3-4b-it} & 51.28\% & \textcolor{red}{33.76\%} & 46.66\% & \textcolor{mygreen}{99.73\%} \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{red}{44.16\%} & 47.53\% & 51.71\% & \textcolor{mygreen}{75.37\%} \\
+\lm{Qwen3-4B} & 56.24\% & \textcolor{red}{34.64\%} & 43.11\% & \textcolor{mygreen}{80.65\%} \\
+\lm{GPT-4.1} & \textcolor{red}{29.00\%} & 32.26\% & \textcolor{mygreen}{35.55\%} & 32.95\% \\
+\bottomrule
+\end{tabular}
+\caption{Mean marginal probability of ``It's good,'' ``It's acceptable,'' and ``It's wrong'' judgements on \textbf{NormBank scenarios with textual distractors}. Lowest values shown in \textcolor{red}{red} and highest in \textcolor{mygreen}{mygreen}.}
+\label{tab:normbank-results}
+\end{table*}

@@ -1,0 +1,25 @@
+\begin{table*}[b]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Positive} & \textbf{Neutral} & \textbf{Negative} \\
+\midrule
+\multicolumn{4}{c}{High-Ambiguity} \\
+\midrule
+\lm{gemma-3-4b-it} & $\mathbf{2.13e-17}$ & $\mathbf{2.68e-54}$ & $\mathbf{8.15e-55}$ \\
+\lm{Llama-3.2-3B-Instruct} & $\mathbf{9.32e-10}$ & $\mathbf{3.70e-103}$ & $\mathbf{7.83e-62}$ \\
+\lm{Qwen3-4B} & $\mathbf{3.57e-35}$ & $\mathbf{9.37e-82}$ & $\mathbf{2.73e-28}$ \\
+\lm{GPT-4.1} & $\mathbf{4.77e-49}$ & $\mathbf{3.39e-40}$ & $\mathbf{4.21e-38}$ \\
+\midrule
+\multicolumn{4}{c}{Low-Ambiguity} \\
+\midrule
+\lm{gemma-3-4b-it} & $\mathbf{1.53e-05}$ & $\mathbf{3.22e-04}$ & $\mathbf{7.65e-06}$ \\
+\lm{Llama-3.2-3B-Instruct} & $\mathbf{3.27e-38}$ & $\mathbf{2.02e-22}$ & $\mathbf{4.91e-62}$ \\
+\lm{Qwen3-4B} & $\mathbf{2.80e-03}$ & $\mathbf{5.46e-07}$ & $\mathbf{1.02e-09}$ \\
+\lm{GPT-4.1} & $9.03e-02$ & $9.03e-02$ & $9.03e-02$ \\
+\bottomrule
+\end{tabular}
+\caption{Holm-Bonferroni-corrected p-values (one-sided) testing whether the magnitude of change in marginal moral action probability (MMAP) is greater than zero on \textbf{high- and low-ambiguity scenarios with textual distractors}.}
+\label{tab:moralchoice-magnitude-sig}
+\end{table*}

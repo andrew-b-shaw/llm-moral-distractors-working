@@ -1,0 +1,23 @@
+\begin{table*}[b]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Positive} & \textbf{Neutral} & \textbf{Negative} \\
+\midrule
+\multicolumn{4}{c}{High-Ambiguity} \\
+\midrule
+\lm{gemma-3-4b-it} & $\mathbf{5.47e-40}$ & $\mathbf{3.16e-41}$ & $\mathbf{2.73e-43}$ \\
+Llama-3.2-11B-Vision-Instruct & $\mathbf{1.24e-82}$ & $\mathbf{5.13e-69}$ & $\mathbf{4.37e-33}$ \\
+Qwen3-VL-4B-Instruct & $\mathbf{3.49e-24}$ & $\mathbf{7.65e-27}$ & $\mathbf{1.20e-27}$ \\
+\midrule
+\multicolumn{4}{c}{Low-Ambiguity} \\
+\midrule
+\lm{gemma-3-4b-it} & $\mathbf{1.08e-03}$ & $\mathbf{2.00e-02}$ & $\mathbf{8.17e-09}$ \\
+Llama-3.2-11B-Vision-Instruct & $\mathbf{1.37e-10}$ & $\mathbf{6.21e-10}$ & $\mathbf{1.41e-13}$ \\
+Qwen3-VL-4B-Instruct & $5.69e-02$ & $5.69e-02$ & $\mathbf{1.78e-03}$ \\
+\bottomrule
+\end{tabular}
+\caption{Holm-Bonferroni-corrected p-values (one-sided) testing whether the magnitude of change in marginal moral action probability (MMAP) is greater than zero on \textbf{high- and low-ambiguity scenarios with visual distractors}.}
+\label{tab:visual-magnitude-sig}
+\end{table*}

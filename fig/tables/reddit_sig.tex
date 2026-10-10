@@ -1,0 +1,47 @@
+\begin{table*}[b]
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Model} & \textbf{Positive vs.} & \textbf{Negative vs.} & \textbf{Positive vs.} & \textbf{Negative vs.} & \textbf{Positive vs.} \\
+ & \textbf{Baseline} & \textbf{Baseline} & \textbf{Neutral} & \textbf{Neutral} & \textbf{Negative} \\
+\midrule
+\multicolumn{6}{c}{ESH} \\
+\midrule
+\lm{gemma-3-4b-it} & $1.00e+00$ & $1.00e+00$ & $2.09e-01$ & $1.00e+00$ & $9.86e-01$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $5.79e-01$ & $5.34e-01$ \\
+\lm{Qwen3-4B} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $5.89e-01$ & $1.00e+00$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.32e-01$ & $4.63e-01$ \\
+\midrule
+\multicolumn{6}{c}{YTA} \\
+\midrule
+\lm{gemma-3-4b-it} & $1.00e+00$ & $1.00e+00$ & $9.86e-01$ & $1.00e+00$ & $9.86e-01$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\lm{Qwen3-4B} & $1.00e+00$ & $1.00e+00$ & $7.31e-01$ & $\mathbf{1.60e-07}$ & $\mathbf{4.76e-05}$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\midrule
+\multicolumn{6}{c}{NTA} \\
+\midrule
+\lm{gemma-3-4b-it} & $1.56e-01$ & $1.00e+00$ & $1.47e-01$ & $9.86e-01$ & $\mathbf{5.29e-03}$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\lm{Qwen3-4B} & $1.00e+00$ & $1.00e+00$ & $7.31e-01$ & $\mathbf{1.23e-06}$ & $\mathbf{2.48e-04}$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\midrule
+\multicolumn{6}{c}{NAH} \\
+\midrule
+\lm{gemma-3-4b-it} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $3.66e-01$ & $1.56e-01$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\lm{Qwen3-4B} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\midrule
+\multicolumn{6}{c}{INFO} \\
+\midrule
+\lm{gemma-3-4b-it} & $\mathbf{2.99e-02}$ & $1.00e+00$ & $\mathbf{1.49e-02}$ & $9.86e-01$ & $1.00e+00$ \\
+\lm{Llama-3.2-3B-Instruct} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\lm{Qwen3-4B} & $1.00e+00$ & $\mathbf{3.05e-02}$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\lm{GPT-4.1} & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ & $1.00e+00$ \\
+\bottomrule
+\end{tabular}
+\caption{Holm-Bonferroni-corrected p-values (two-sided) comparing marginal probability distributions of verdicts on \textbf{r/AITA scenarios with textual distractors}.}
+\label{tab:reddit-sig}
+\end{table*}

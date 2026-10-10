@@ -1,8 +1,42 @@
-import numpy as np
 import pandas as pd
 
-from src.analysis.significance_testing import pairwise_mixed_lm
+from src.analysis.significance_testing import aggregate_and_test
 from src.config import PATH_DISTRACTORS, PATH_CSV_RESULTS
+
+def _score_reddit_verdict_option(distractor_dfs, option, options_ordering):
+    """For each key's dataframe, merge against baseline and compute the marginal probability
+    of `option` (normalized over all of options_ordering) and its baseline-subtracted diff.
+    Shared by calculate_reddit_verdict_results and disaggregate_reddit_verdict_results, which
+    differ only in how distractor_dfs is built."""
+    verdict_prob_cols = [f'{o}_prob' for o in options_ordering]
+    option_results = {}
+    for k, df in distractor_dfs.items():
+        df_merge = df.merge(
+            distractor_dfs['baseline'][(['scenario_id'] + verdict_prob_cols)],
+            on='scenario_id',
+            how='left',
+            suffixes=['_distractor', '_baseline']
+        )
+
+        # calculate marginal probabilities
+        for condition in ['distractor', 'baseline']:
+            df_merge[f'total_prob_{condition}'] = df_merge[[f'{col}_{condition}' for col in verdict_prob_cols]].sum(axis=1)
+            df_merge[f'mp_{option}_{condition}'] = df_merge[f'{option}_prob_{condition}'] / df_merge[f'total_prob_{condition}']
+        # calculate differences in marginal probabilities
+        df_merge[f'mp_diff_{option}'] = df_merge[f'mp_{option}_distractor'] - df_merge[f'mp_{option}_baseline']
+
+        # fold question_ordering into scenario_id for significance_testing.py's crossed
+        # random-effects grouping, where present (see moralchoice_analysis.py for rationale);
+        # a no-op today since Reddit has no question_ordering column, kept for consistency
+        # in case that ever changes.
+        if 'question_ordering' in df_merge.columns:
+            df_merge['scenario_id'] = (
+                df_merge['scenario_id'].astype(str) + '_' + df_merge['question_ordering'].astype(str)
+            )
+
+        option_results[k] = df_merge
+
+    return option_results
 
 def calculate_reddit_verdict_results(
         csv_result_filepath,
@@ -33,68 +67,9 @@ def calculate_reddit_verdict_results(
 
     results = {}
     for option in options_ordering:
-        option_results = {}
-        for k, df in distractor_dfs.items():
-            df_merge = df.merge(
-                distractor_dfs['baseline'][(['scenario_id'] + [f'{option}_prob' for option in options_ordering])],
-                on='scenario_id',
-                how='left',
-                suffixes=['_distractor', '_baseline']
-            )
-
-            # calculate marginal probabilities
-            for condition in ['distractor', 'baseline']:
-                df_merge[f'total_prob_{condition}'] = df_merge[[f'{option}_prob_{condition}' for option in options_ordering]].sum(axis=1)
-                df_merge[f'mp_{option}_{condition}'] = df_merge[f'{option}_prob_{condition}'] / df_merge[f'total_prob_{condition}']
-            # calculate differences in marginal probabilities
-            df_merge[f'mp_diff_{option}'] = df_merge[f'mp_{option}_distractor'] - df_merge[f'mp_{option}_baseline']
-            option_results[k] = df_merge
-
-        mean_mps = {}
-        mean_diffs = {}
-        std_mps = {}
-        std_diffs = {}
-        st_error_mps = {}
-        st_error_diffs = {}
-
-        for distractor, df in option_results.items():
-            (mean_mps[distractor], mean_diffs[distractor],
-             std_mps[distractor], std_diffs[distractor],
-             st_error_mps[distractor], st_error_diffs[distractor],
-             sig_mps) = {}, {}, {}, {}, {}, {}, {}
-
-            mean_mps[distractor] = np.mean(df[f'mp_{option}_distractor'])
-            mean_diffs[distractor] = np.mean(df[f'mp_diff_{option}'])
-            std_mps[distractor] = np.std(df[f'mp_{option}_distractor'])
-            std_diffs[distractor] = np.std(df[f'mp_diff_{option}'])
-            st_error_mps[distractor] = std_mps[distractor] / np.sqrt(len(df[f'mp_{option}_distractor']))
-            st_error_diffs[distractor] = std_diffs[distractor] / np.sqrt(len(df[f'mp_diff_{option}']))
-
-        # significance testing
-        sig_mps = {}
-        if sig_testing:
-            for cond_a, cond_b in [
-                ('baseline', 'positive'), ('baseline', 'neutral'), ('baseline', 'negative'),
-                ('positive', 'neutral'), ('negative', 'neutral'), ('positive', 'negative')
-            ]:
-                sig_results = pairwise_mixed_lm(option_results, cond_a, cond_b, f'mp_{option}_distractor')
-                sig_mps[f'{cond_a}_vs_{cond_b}'] = sig_results
-
-            # Prefer the crossed-random-effects model's standard error over the
-            # naive per-row st_error_diffs above, since it accounts for
-            # non-independence across shared scenarios/distractor texts.
-            for condition in ('positive', 'neutral', 'negative'):
-                se = sig_mps.get(f'baseline_vs_{condition}', {}).get('se')
-                if se is not None and not np.isnan(se):
-                    st_error_diffs[condition] = se
-
-        results[option] = {
-            'mean_scores': mean_mps,
-            'mean_diffs': mean_diffs,
-            'st_error_scores': st_error_mps,
-            'st_error_diffs': st_error_diffs,
-            'sig': sig_mps,
-        }
+        option_results = _score_reddit_verdict_option(distractor_dfs, option, options_ordering)
+        aggregated = aggregate_and_test(option_results, f'mp_{option}_distractor', f'mp_diff_{option}', sig_testing, distractor_disagg=False)
+        results[option] = {k: aggregated[k] for k in ('mean_scores', 'mean_diffs', 'st_error_scores', 'st_error_diffs', 'sig', 'sig_magnitude')}
 
     return results
 
@@ -125,62 +100,27 @@ def disaggregate_reddit_verdict_results(
 
     results = {}
     for option in options_ordering:
-        option_results = {}
-        for k, df in distractor_dfs.items():
-            df_merge = df.merge(
-                distractor_dfs['baseline'][(['scenario_id'] + [f'{option}_prob' for option in options_ordering])],
-                on='scenario_id',
-                how='left',
-                suffixes=['_distractor', '_baseline']
-            )
-
-            # calculate marginal probabilities
-            for condition in ['distractor', 'baseline']:
-                df_merge[f'total_prob_{condition}'] = df_merge[[f'{option}_prob_{condition}' for option in options_ordering]].sum(axis=1)
-                df_merge[f'mp_{option}_{condition}'] = df_merge[f'{option}_prob_{condition}'] / df_merge[f'total_prob_{condition}']
-            # calculate differences in marginal probabilities
-            df_merge[f'mp_diff_{option}'] = df_merge[f'mp_{option}_distractor'] - df_merge[f'mp_{option}_baseline']
-            option_results[k] = df_merge
-
-        mean_mps = {}
-        mean_diffs = {}
-        std_mps = {}
-        std_diffs = {}
-        st_error_mps = {}
-        st_error_diffs = {}
-
-        for distractor, df in option_results.items():
-            (mean_mps[distractor], mean_diffs[distractor],
-             std_mps[distractor], std_diffs[distractor],
-             st_error_mps[distractor], st_error_diffs[distractor],
-             sig_mps) = {}, {}, {}, {}, {}, {}, {}
-
-            mean_mps[distractor] = np.mean(df[f'mp_{option}_distractor'])
-            mean_diffs[distractor] = np.mean(df[f'mp_diff_{option}'])
-            std_mps[distractor] = np.std(df[f'mp_{option}_distractor'])
-            std_diffs[distractor] = np.std(df[f'mp_diff_{option}'])
-            st_error_mps[distractor] = std_mps[distractor] / np.sqrt(len(df[f'mp_{option}_distractor']))
-            st_error_diffs[distractor] = std_diffs[distractor] / np.sqrt(len(df[f'mp_diff_{option}']))
-
-        # significance testing
-        sig_mps = {}
-        if sig_testing:
-            for cond_a, cond_b in [
-                ('baseline', 'positive'), ('baseline', 'neutral'), ('baseline', 'negative'),
-                ('positive', 'neutral'), ('negative', 'neutral'), ('positive', 'negative')
-            ]:
-                sig_results = pairwise_mixed_lm(option_results, cond_a, cond_b, f'mp_{option}_distractor')
-                sig_mps[f'{cond_a}_vs_{cond_b}'] = sig_results
-
-        results[option] = {
-            'mean_scores': mean_mps,
-            'mean_diffs': mean_diffs,
-            'st_error_scores': st_error_mps,
-            'st_error_diffs': st_error_diffs,
-            'sig': sig_mps,
-        }
+        option_results = _score_reddit_verdict_option(distractor_dfs, option, options_ordering)
+        aggregated = aggregate_and_test(option_results, f'mp_{option}_distractor', f'mp_diff_{option}', sig_testing, distractor_disagg=True)
+        results[option] = {k: aggregated[k] for k in ('mean_scores', 'mean_diffs', 'st_error_scores', 'st_error_diffs', 'sig')}
 
     return results
+
+def disaggregate_reddit_verdict_results_from_files(
+        csv_filenames,
+        sig_testing=False,
+        distractor_filepath="distractors.csv",
+        options_ordering=None
+):
+    """Same as disaggregate_reddit_verdict_results, but builds the multi-model response_df
+    from a list of csv filenames itself, so the call is cacheable by results_cache."""
+    dfs = []
+    for i, filename in enumerate(csv_filenames):
+        df = pd.read_csv(PATH_CSV_RESULTS / filename)
+        df['model'] = str(i)
+        dfs.append(df)
+    response_df = pd.concat(dfs)
+    return disaggregate_reddit_verdict_results(response_df, sig_testing, distractor_filepath, options_ordering)
 
 def calculate_reddit_mf_results(csv_result_filepath, sig_testing=False):
     distractor_filepath = 'distractors.csv'
@@ -213,45 +153,20 @@ def calculate_reddit_mf_results(csv_result_filepath, sig_testing=False):
 
             # calculate differences in marginal probabilities
             df_merge[f'diff_{option}_score'] = df_merge[f'{option}_score_distractor'] - df_merge[f'{option}_score_baseline']
+
+            # fold question_ordering into scenario_id for significance_testing.py's crossed
+            # random-effects grouping, where present (see moralchoice_analysis.py for
+            # rationale); a no-op today since Reddit has no question_ordering column, kept
+            # for consistency in case that ever changes.
+            if 'question_ordering' in df_merge.columns:
+                df_merge['scenario_id'] = (
+                    df_merge['scenario_id'].astype(str) + '_' + df_merge['question_ordering'].astype(str)
+                )
+
             option_results[k] = df_merge
 
-        mean_mps = {}
-        mean_diffs = {}
-        std_mps = {}
-        std_diffs = {}
-        st_error_mps = {}
-        st_error_diffs = {}
-
-        for distractor, df in option_results.items():
-            (mean_mps[distractor], mean_diffs[distractor],
-             std_mps[distractor], std_diffs[distractor],
-             st_error_mps[distractor], st_error_diffs[distractor],
-             sig_mps) = {}, {}, {}, {}, {}, {}, {}
-
-            mean_mps[distractor] = np.mean(df[f'{option}_score_distractor'])
-            mean_diffs[distractor] = np.mean(df[f'diff_{option}_score'])
-            std_mps[distractor] = np.std(df[f'{option}_score_distractor'])
-            std_diffs[distractor] = np.std(df[f'diff_{option}_score'])
-            st_error_mps[distractor] = std_mps[distractor] / np.sqrt(len(df[f'{option}_score_distractor']))
-            st_error_diffs[distractor] = std_diffs[distractor] / np.sqrt(len(df[f'diff_{option}_score']))
-
-        # significance testing
-        sig_mps = {}
-        if sig_testing:
-            for cond_a, cond_b in [
-                ('baseline', 'positive'), ('baseline', 'neutral'), ('baseline', 'negative'),
-                ('positive', 'neutral'), ('negative', 'neutral'), ('positive', 'negative')
-            ]:
-                sig_results = pairwise_mixed_lm(option_results, cond_a, cond_b, f'{option}_score_distractor')
-                sig_mps[f'{cond_a}_vs_{cond_b}'] = sig_results
-
-        results[option] = {
-            'mean_scores': mean_mps,
-            'mean_diffs': mean_diffs,
-            'st_error_scores': st_error_mps,
-            'st_error_diffs': st_error_diffs,
-            'sig': sig_mps,
-        }
+        aggregated = aggregate_and_test(option_results, f'{option}_score_distractor', f'diff_{option}_score', sig_testing, distractor_disagg=False)
+        results[option] = {k: aggregated[k] for k in ('mean_scores', 'mean_diffs', 'st_error_scores', 'st_error_diffs', 'sig', 'sig_magnitude')}
 
     return results
 

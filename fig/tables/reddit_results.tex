@@ -1,0 +1,46 @@
+\begin{table*}[b]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{Baseline} & \textbf{Positive} & \textbf{Neutral} & \textbf{Negative} \\
+\midrule
+\multicolumn{5}{c}{ESH} \\
+\midrule
+\lm{gemma-3-4b-it} & 9.32\% & \textcolor{red}{5.83\%} & 9.24\% & \textcolor{mygreen}{15.93\%} \\
+\lm{Llama-3.2-3B-Instruct} & 9.89\% & \textcolor{red}{9.38\%} & 9.46\% & \textcolor{mygreen}{10.21\%} \\
+\lm{Qwen3-4B} & 0.58\% & 0.50\% & \textcolor{red}{0.37\%} & \textcolor{mygreen}{1.26\%} \\
+\lm{GPT-4.1} & \textcolor{red}{2.80\%} & 3.44\% & 3.24\% & \textcolor{mygreen}{4.32\%} \\
+\midrule
+\multicolumn{5}{c}{YTA} \\
+\midrule
+\lm{gemma-3-4b-it} & \textcolor{mygreen}{41.04\%} & \textcolor{red}{27.72\%} & 32.12\% & 36.99\% \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{red}{38.65\%} & 39.28\% & \textcolor{mygreen}{39.91\%} & 39.10\% \\
+\lm{Qwen3-4B} & 55.08\% & 56.79\% & \textcolor{mygreen}{62.79\%} & \textcolor{red}{36.97\%} \\
+\lm{GPT-4.1} & \textcolor{mygreen}{6.19\%} & 5.68\% & 5.94\% & \textcolor{red}{5.65\%} \\
+\midrule
+\multicolumn{5}{c}{NTA} \\
+\midrule
+\lm{gemma-3-4b-it} & 41.05\% & \textcolor{mygreen}{57.65\%} & 49.68\% & \textcolor{red}{41.03\%} \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{mygreen}{38.49\%} & 37.48\% & \textcolor{red}{36.75\%} & 36.88\% \\
+\lm{Qwen3-4B} & 43.94\% & 42.69\% & \textcolor{red}{36.84\%} & \textcolor{mygreen}{61.67\%} \\
+\lm{GPT-4.1} & 87.81\% & \textcolor{mygreen}{88.39\%} & 88.02\% & \textcolor{red}{85.27\%} \\
+\midrule
+\multicolumn{5}{c}{NAH} \\
+\midrule
+\lm{gemma-3-4b-it} & 2.85\% & \textcolor{mygreen}{5.44\%} & 3.35\% & \textcolor{red}{2.04\%} \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{red}{6.83\%} & \textcolor{mygreen}{7.67\%} & 7.55\% & 7.41\% \\
+\lm{Qwen3-4B} & \textcolor{red}{0.00\%} & 0.00\% & 0.00\% & \textcolor{mygreen}{0.10\%} \\
+\lm{GPT-4.1} & 3.20\% & \textcolor{red}{2.48\%} & 2.80\% & \textcolor{mygreen}{4.76\%} \\
+\midrule
+\multicolumn{5}{c}{INFO} \\
+\midrule
+\lm{gemma-3-4b-it} & \textcolor{mygreen}{5.73\%} & \textcolor{red}{3.35\%} & 5.62\% & 4.01\% \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{red}{6.14\%} & 6.20\% & 6.33\% & \textcolor{mygreen}{6.40\%} \\
+\lm{Qwen3-4B} & \textcolor{mygreen}{0.40\%} & 0.02\% & 0.00\% & \textcolor{red}{0.00\%} \\
+\lm{GPT-4.1} & \textcolor{red}{0.00\%} & \textcolor{mygreen}{0.01\%} & 0.01\% & 0.00\% \\
+\bottomrule
+\end{tabular}
+\caption{Mean marginal probability of verdicts on \textbf{r/AITA scenarios with textual distractors}. Lowest values shown in \textcolor{red}{red} and highest in \textcolor{mygreen}{mygreen}.}
+\label{tab:reddit-results}
+\end{table*}

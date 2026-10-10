@@ -1,0 +1,32 @@
+\begin{table*}[b]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Positive} & \textbf{Neutral} & \textbf{Negative} \\
+\midrule
+\multicolumn{4}{c}{Good} \\
+\midrule
+\lm{gemma-3-4b-it} & $\mathbf{7.75e-11}$ & $\mathbf{4.70e-40}$ & $\mathbf{9.48e-13}$ \\
+\lm{Llama-3.2-3B-Instruct} & $\mathbf{2.60e-43}$ & $\mathbf{1.42e-31}$ & $\mathbf{2.56e-44}$ \\
+\lm{Qwen3-4B} & $\mathbf{5.19e-11}$ & $\mathbf{7.03e-11}$ & $\mathbf{5.19e-11}$ \\
+\lm{GPT-4.1} & $\mathbf{3.36e-16}$ & $\mathbf{1.52e-10}$ & $\mathbf{8.48e-20}$ \\
+\midrule
+\multicolumn{4}{c}{Acceptable} \\
+\midrule
+\lm{gemma-3-4b-it} & $\mathbf{1.12e-32}$ & $\mathbf{1.98e-16}$ & $\mathbf{1.51e-22}$ \\
+\lm{Llama-3.2-3B-Instruct} & $\mathbf{1.44e-58}$ & $\mathbf{3.97e-67}$ & $\mathbf{9.97e-65}$ \\
+\lm{Qwen3-4B} & $\mathbf{4.68e-37}$ & $\mathbf{2.87e-25}$ & $\mathbf{3.86e-28}$ \\
+\lm{GPT-4.1} & $\mathbf{1.63e-23}$ & $\mathbf{7.45e-27}$ & $\mathbf{8.77e-32}$ \\
+\midrule
+\multicolumn{4}{c}{Wrong} \\
+\midrule
+\lm{gemma-3-4b-it} & $\mathbf{9.45e-12}$ & $1.37e-01$ & $\mathbf{5.83e-62}$ \\
+\lm{Llama-3.2-3B-Instruct} & $\mathbf{5.51e-23}$ & $\mathbf{2.65e-29}$ & $\mathbf{1.77e-37}$ \\
+\lm{Qwen3-4B} & $\mathbf{2.99e-21}$ & $\mathbf{3.88e-19}$ & $\mathbf{7.88e-16}$ \\
+\lm{GPT-4.1} & $\mathbf{5.32e-10}$ & $\mathbf{1.90e-08}$ & $\mathbf{3.93e-08}$ \\
+\bottomrule
+\end{tabular}
+\caption{Holm-Bonferroni-corrected p-values (one-sided) testing whether the magnitude of change in marginal judgement probability is greater than zero on \textbf{NormBank scenarios with textual distractors}.}
+\label{tab:normbank-magnitude-sig}
+\end{table*}

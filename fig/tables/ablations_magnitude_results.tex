@@ -1,0 +1,32 @@
+\begin{table*}[b]
+\centering
+\small
+\begin{tabular}{llccc}
+\toprule
+\textbf{Ablation} & \textbf{Model} & \textbf{Positive} & \textbf{Neutral} & \textbf{Negative} \\
+\midrule
+Size & gemma-3-27b-it & 0.94\% & \textcolor{red}{0.91\%} & \textcolor{mygreen}{11.23\%} \\
+ & gemma-3-1b-it & \textcolor{red}{8.07\%} & 9.19\% & \textcolor{mygreen}{18.60\%} \\
+ & gemma-3-270m-it & \textcolor{mygreen}{6.68\%} & \textcolor{red}{6.24\%} & 6.55\% \\
+ & Llama-3.2-11B-Vision-Instruct & \textcolor{red}{2.25\%} & 3.83\% & \textcolor{mygreen}{7.25\%} \\
+ & Llama-3.2-1B-Instruct & \textcolor{mygreen}{13.73\%} & 11.65\% & \textcolor{red}{10.79\%} \\
+ & Qwen3-32B & \textcolor{red}{0.21\%} & 0.21\% & \textcolor{mygreen}{1.40\%} \\
+ & Qwen3-1.7B & \textcolor{red}{8.35\%} & 9.31\% & \textcolor{mygreen}{11.99\%} \\
+ & Qwen3-0.6B & \textcolor{red}{12.08\%} & 13.90\% & \textcolor{mygreen}{16.86\%} \\
+\midrule
+Instruction-Tuning & gemma-3-4b-pt & \textcolor{red}{7.00\%} & 7.67\% & \textcolor{mygreen}{9.36\%} \\
+ & Llama-3.2-3B & 5.77\% & \textcolor{red}{5.32\%} & \textcolor{mygreen}{7.06\%} \\
+ & Qwen3-4B-Base & \textcolor{red}{5.16\%} & 6.15\% & \textcolor{mygreen}{7.41\%} \\
+\midrule
+Prompt Engineering & gemma-3-4b-it-prompt & \textcolor{red}{2.57\%} & 2.58\% & \textcolor{mygreen}{5.17\%} \\
+ & Llama-3.2-3B-Instruct-prompt & 25.43\% & \textcolor{red}{24.25\%} & \textcolor{mygreen}{31.91\%} \\
+ & Qwen3-4B-prompt & \textcolor{red}{1.98\%} & 2.16\% & \textcolor{mygreen}{4.98\%} \\
+ & GPT-4.1-prompt & \textcolor{red}{0.24\%} & 0.31\% & \textcolor{mygreen}{1.07\%} \\
+\midrule
+Reasoning & Qwen3-4B-thinking & \textcolor{red}{0.00\%} & 0.01\% & \textcolor{mygreen}{0.87\%} \\
+ & Qwen3-4B-short & \textcolor{red}{2.62\%} & 2.69\% & \textcolor{mygreen}{2.74\%} \\
+\bottomrule
+\end{tabular}
+\caption{Mean magnitude of change in marginal moral action probability (MMAP) on \textbf{low-ambiguity scenarios with textual distractors for ablation experiments}. Lowest values shown in \textcolor{red}{red} and highest in \textcolor{mygreen}{mygreen}.}
+\label{tab:ablations-magnitude-results}
+\end{table*}

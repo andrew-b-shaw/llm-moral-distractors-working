@@ -1,0 +1,25 @@
+\begin{table*}[b]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{Baseline} & \textbf{Positive} & \textbf{Neutral} & \textbf{Negative} \\
+\midrule
+\multicolumn{5}{c}{High-Ambiguity} \\
+\midrule
+\lm{gemma-3-4b-it} & 63.83\% & \textcolor{mygreen}{65.90\%} & 65.29\% & \textcolor{red}{62.87\%} \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{mygreen}{56.28\%} & 52.23\% & 52.26\% & \textcolor{red}{51.25\%} \\
+\lm{Qwen3-4B} & \textcolor{red}{63.87\%} & \textcolor{mygreen}{69.13\%} & 66.94\% & 64.84\% \\
+\lm{GPT-4.1} & 70.92\% & \textcolor{mygreen}{71.84\%} & 71.72\% & \textcolor{red}{70.05\%} \\
+\midrule
+\multicolumn{5}{c}{Low-Ambiguity} \\
+\midrule
+\lm{gemma-3-4b-it} & 97.55\% & \textcolor{mygreen}{98.07\%} & 97.91\% & \textcolor{red}{95.81\%} \\
+\lm{Llama-3.2-3B-Instruct} & \textcolor{mygreen}{96.20\%} & 74.69\% & 75.71\% & \textcolor{red}{66.51\%} \\
+\lm{Qwen3-4B} & 97.98\% & \textcolor{mygreen}{99.05\%} & 98.79\% & \textcolor{red}{95.77\%} \\
+\lm{GPT-4.1} & \textcolor{mygreen}{99.82\%} & 99.71\% & 99.64\% & \textcolor{red}{98.75\%} \\
+\bottomrule
+\end{tabular}
+\caption{Marginal moral action probability (MMAP) in \textbf{high- and low-ambiguity scenarios with textual distractors}. Lowest values shown in \textcolor{red}{red} and highest in \textcolor{mygreen}{mygreen}.}
+\label{tab:moralchoice-results}
+\end{table*}
